@@ -28,9 +28,9 @@ Configure, build, run and debug the Linux kernel from VS Code.
   the view's **…** menu and the Kernel Workbench menu. Its **Target** group
   shows the tree's architecture (and whether it is a cross build), Debug or Release, and base
   config; click a row, or its **Change…** action, to pick another. Its **Status** group shows
-  whether and when the target was configured and built (and which image), and the step
-  that is running. Configure and Build are also buttons on the editor toolbar and the Kernel
-  view's toolbar, and in the Kernel Workbench menu.
+  whether and when the target was configured and built (and which image), whether a VM is
+  running, and the step that is running. Configure, Build and Run are also buttons on the
+  editor toolbar and the Kernel view's toolbar, and in the Kernel Workbench menu.
 - A **Kernel Workbench** menu (chip icon) on the toolbar of every editor in a kernel tree,
   with the three Select commands.
 - **Kernel: Configure** configures the selected target into its build directory: the base
@@ -72,6 +72,15 @@ Configure, build, run and debug the Linux kernel from VS Code.
   Explorer's right-click menus under **Kernel Workbench**, builds a directory's objects and
   links the modules it compiled. **Build Modules** (under More) runs `make modules` on a built
   kernel (modpost needs `vmlinux.o`).
+- **Kernel: Run in QEMU** (Ctrl+F5, the Run row, the toolbar) builds if needed
+  (`kernelWorkbench.buildBeforeRun`) and boots the kernel image in QEMU in a terminal, with
+  the initramfs from `kernelWorkbench.run.initramfs` for the architecture (an initramfs set
+  but missing is an error), KVM when the architecture is native and `/dev/kvm` is usable
+  (`kernelWorkbench.run.kvm`), `kernelWorkbench.run.memory` and `run.smp`, the extra
+  `run.cmdline` and `run.qemuArgs`; Configure applies `kernelWorkbench.configure.qemuOptions`
+  so an initramfs can boot. The console also goes to `<build dir>/kernel-workbench/console.log`.
+  A QEMU that fails keeps its terminal to read; a clean exit (Ctrl-A X) closes it. While the
+  VM runs, the Run row and button become **Stop VM**, and Status › VM says so.
 
 ## Requirements
 

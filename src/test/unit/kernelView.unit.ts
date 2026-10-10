@@ -65,6 +65,7 @@ describe('the Kernel view', () => {
 					'kernelWorkbench.build',
 					'step',
 				],
+				['Run', `${settings.arch} Debug in QEMU`, 'kernelWorkbench.run', 'step'],
 			],
 		);
 		assert.deepEqual(labels(kernelView, group(kernelView, 'Target')), [
@@ -74,7 +75,8 @@ describe('the Kernel view', () => {
 		]);
 		const status = labels(kernelView, group(kernelView, 'Status'));
 		assert.deepEqual(status.slice(0, 2), ['Configured — not yet', 'Built — not yet']);
-		assert.match(status[2], /^Tools — (all installed|missing \d+)$/);
+		assert.equal(status[2], 'VM — stopped');
+		assert.match(status[3], /^Tools — (all installed|missing \d+)$/);
 	});
 
 	it('offers the other actions under More, collapsed, as rows that run a command', () => {
@@ -104,10 +106,22 @@ describe('the Kernel view', () => {
 		}
 	});
 
+	it('shows Stop VM and the VM running while QEMU runs', () => {
+		const { kernelView, runner } = open();
+		Object.defineProperty(runner, 'running', { value: true, configurable: true });
+		const steps = kernelView.getChildren(group(kernelView, 'Steps')).map(r => r.label);
+		assert.deepEqual(steps, ['Configure', 'Build', 'Stop VM']);
+		const vm = kernelView.getChildren(group(kernelView, 'Status'))[2];
+		assert.deepEqual(
+			[vm.label, vm.description, vm.contextValue],
+			['VM', 'running', 'vmRunning'],
+		);
+	});
+
 	it('shows the tool check: all installed, or the missing ones with Install', () => {
 		const { kernelView } = open();
 		kernelView.setTools('', '', []);
-		let [, , tools] = kernelView.getChildren(group(kernelView, 'Status'));
+		let [, , , tools] = kernelView.getChildren(group(kernelView, 'Status'));
 		assert.deepEqual(
 			[tools.label, tools.description, tools.contextValue],
 			['Tools', 'all installed', undefined],
@@ -116,7 +130,7 @@ describe('the Kernel view', () => {
 			'flex (flex)',
 			'bison (bison)',
 		]);
-		[, , tools] = kernelView.getChildren(group(kernelView, 'Status'));
+		[, , , tools] = kernelView.getChildren(group(kernelView, 'Status'));
 		assert.deepEqual(
 			[tools.description, tools.contextValue, tools.tooltip],
 			['missing 2', 'toolsMissing', 'build: flex, bison'],
@@ -126,7 +140,7 @@ describe('the Kernel view', () => {
 			['flex (flex)', 'bison (bison)'],
 		);
 		kernelView.setTools('build: a header', '', ['a header']);
-		[, , tools] = kernelView.getChildren(group(kernelView, 'Status'));
+		[, , , tools] = kernelView.getChildren(group(kernelView, 'Status'));
 		assert.equal(tools.contextValue, undefined, 'nothing to install');
 	});
 

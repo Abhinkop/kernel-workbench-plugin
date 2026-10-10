@@ -137,6 +137,18 @@
 				"command": "kernelWorkbench.buildDirectory",
 				"title": "Build This Directory",
 				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.run",
+				"title": "Run in QEMU",
+				"category": "Kernel",
+				"icon": "$(play)"
+			},
+			{
+				"command": "kernelWorkbench.stop",
+				"title": "Stop VM",
+				"category": "Kernel",
+				"icon": "$(debug-stop)"
 			}
 		],
 		"submenus": [
@@ -213,6 +225,16 @@
 					"command": "kernelWorkbench.build",
 					"when": "kernelWorkbench.active",
 					"group": "navigation@-8"
+				},
+				{
+					"command": "kernelWorkbench.run",
+					"when": "kernelWorkbench.active && !kernelWorkbench.vmRunning",
+					"group": "navigation@-7"
+				},
+				{
+					"command": "kernelWorkbench.stop",
+					"when": "kernelWorkbench.active && kernelWorkbench.vmRunning",
+					"group": "navigation@-5"
 				}
 			],
 			"view/title": [
@@ -225,6 +247,16 @@
 					"command": "kernelWorkbench.build",
 					"when": "view == kernelWorkbench.kernel",
 					"group": "navigation@2"
+				},
+				{
+					"command": "kernelWorkbench.run",
+					"when": "view == kernelWorkbench.kernel && !kernelWorkbench.vmRunning",
+					"group": "navigation@3"
+				},
+				{
+					"command": "kernelWorkbench.stop",
+					"when": "view == kernelWorkbench.kernel && kernelWorkbench.vmRunning",
+					"group": "navigation@5"
 				},
 				{
 					"command": "kernelWorkbench.menuconfig",
@@ -270,6 +302,16 @@
 				{
 					"command": "kernelWorkbench.build",
 					"group": "0_steps@2"
+				},
+				{
+					"command": "kernelWorkbench.run",
+					"group": "0_steps@3",
+					"when": "!kernelWorkbench.vmRunning"
+				},
+				{
+					"command": "kernelWorkbench.stop",
+					"group": "0_steps@5",
+					"when": "kernelWorkbench.vmRunning"
 				},
 				{
 					"command": "kernelWorkbench.selectArch",
@@ -380,6 +422,14 @@
 				{
 					"command": "kernelWorkbench.buildDirectory",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.run",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.stop",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
@@ -396,6 +446,11 @@
 				{
 					"command": "kernelWorkbench.installTools",
 					"when": "view == kernelWorkbench.kernel && viewItem == toolsMissing",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.stop",
+					"when": "view == kernelWorkbench.kernel && viewItem == vmRunning",
 					"group": "inline"
 				}
 			]
@@ -429,6 +484,11 @@
 				"command": "kernelWorkbench.compileFile",
 				"key": "ctrl+f7",
 				"when": "kernelWorkbench.active && editorLangId == c"
+			},
+			{
+				"command": "kernelWorkbench.run",
+				"key": "ctrl+f5",
+				"when": "kernelWorkbench.active && !inDebugMode"
 			}
 		],
 		"configuration": [
@@ -511,6 +571,22 @@
 						},
 						"markdownDescription": "Kconfig options for the **Release** variant.",
 						"scope": "resource"
+					},
+					"kernelWorkbench.configure.qemuOptions": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"default": {
+							"BLK_DEV_INITRD": "y",
+							"DEVTMPFS": "y",
+							"DEVTMPFS_MOUNT": "y",
+							"TMPFS": "y",
+							"BINFMT_ELF": "y",
+							"BINFMT_SCRIPT": "y"
+						},
+						"markdownDescription": "Kconfig options applied at Configure so the kernel can boot in QEMU from an initramfs given in `kernelWorkbench.run.initramfs`.",
+						"scope": "resource"
 					}
 				}
 			},
@@ -583,6 +659,66 @@
 							"Keep the terminal open after every step"
 						],
 						"description": "What happens to the terminal of a step (Configure, Build, Clean, checks, ...) when it finishes. A failed step's terminal always stays open.",
+						"scope": "resource"
+					}
+				}
+			},
+			{
+				"title": "Run",
+				"order": 3,
+				"properties": {
+					"kernelWorkbench.run.initramfs": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"default": {},
+						"markdownDescription": "Initramfs to boot with, per arch, e.g. `{ \"arm64\": \"/srv/initramfs/arm64.cpio.gz\" }`. If none is set for the arch, the kernel boots without an initramfs (give `root=` in `kernelWorkbench.run.cmdline` and a disk in `kernelWorkbench.run.qemuArgs`).",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.memory": {
+						"type": "string",
+						"default": "2G",
+						"description": "Guest memory (QEMU -m).",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.smp": {
+						"type": "integer",
+						"minimum": 1,
+						"default": 2,
+						"description": "Guest CPUs (QEMU -smp).",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.kvm": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"on",
+							"off"
+						],
+						"default": "auto",
+						"description": "auto: use KVM when the arch is native and /dev/kvm is accessible.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.cmdline": {
+						"type": "string",
+						"default": "",
+						"description": "Extra kernel command line.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.qemuArgs": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"markdownDescription": "Extra QEMU arguments, e.g. `[\"-device\", \"virtio-rng-pci\"]`.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.buildBeforeRun": {
+						"type": "boolean",
+						"default": true,
+						"description": "Run an incremental build before Run.",
 						"scope": "resource"
 					}
 				}

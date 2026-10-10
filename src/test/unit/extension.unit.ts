@@ -118,7 +118,12 @@ describe('the manifest', () => {
 
 	describe('menus', () => {
 		const menus = contributes.menus ?? {};
-		const STEPS = ['kernelWorkbench.configure', 'kernelWorkbench.build'];
+		const STEPS = [
+			'kernelWorkbench.configure',
+			'kernelWorkbench.build',
+			'kernelWorkbench.run',
+			'kernelWorkbench.stop',
+		];
 
 		it('puts the steps as buttons on the toolbar of every kernel editor', () => {
 			for (const command of STEPS) {
@@ -183,7 +188,12 @@ describe('the manifest', () => {
 	});
 
 	it('keeps the editor and Explorer right-click menus about the file', () => {
-		const steps = ['kernelWorkbench.configure', 'kernelWorkbench.build'];
+		const steps = [
+			'kernelWorkbench.configure',
+			'kernelWorkbench.build',
+			'kernelWorkbench.run',
+			'kernelWorkbench.stop',
+		];
 		for (const menu of [
 			'editor/context',
 			'explorer/context',

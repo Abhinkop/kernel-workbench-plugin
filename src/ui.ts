@@ -2,7 +2,20 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ARCHES, archInfo, isNative } from './arch';
+import type { Runner } from './runner';
 import type { Settings } from './settings';
+
+/** Mirrors the VM state into a context key, so Stop shows only while a VM runs. */
+function syncContextKeys(context: vscode.ExtensionContext, runner: Runner): void {
+	const update = () =>
+		vscode.commands.executeCommand('setContext', 'kernelWorkbench.vmRunning', runner.running);
+	context.subscriptions.push(
+		runner.onDidChange(update),
+		vscode.window.onDidOpenTerminal(update),
+		vscode.window.onDidCloseTerminal(update),
+	);
+	update();
+}
 
 /**
  * Base configs offered for the current arch.
@@ -84,4 +97,4 @@ async function setConfig(s: Settings, value?: string) {
 	await s.select('config', value);
 }
 
-export { listConfigs, pickArch, pickVariant, pickConfig, setConfig };
+export { listConfigs, pickArch, pickVariant, pickConfig, setConfig, syncContextKeys };

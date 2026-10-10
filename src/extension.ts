@@ -3,15 +3,17 @@ import { followSelection } from './clangd';
 import { Kbuild } from './kbuild';
 import { isKernelTree } from './kernelTree';
 import { KernelView, registerKernelView } from './kernelView';
+import { Runner } from './runner';
 import { Settings } from './settings';
 import { registerToolCheck, runInstall } from './toolCheck';
 import { installCommand, missing } from './tools';
-import { pickArch, pickVariant, pickConfig } from './ui';
+import { pickArch, pickVariant, pickConfig, syncContextKeys } from './ui';
 
 /** The extension's parts, returned by activate() for the tests. */
 export interface KernelWorkbench {
 	settings: Settings;
 	kbuild: Kbuild;
+	runner: Runner;
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -29,10 +31,12 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 
 	const settings = new Settings(context, folder);
 	const kbuild = new Kbuild(settings);
-	const kernelView = registerKernelView(context, settings, kbuild);
+	const runner = new Runner(context, settings, kbuild);
+	syncContextKeys(context, runner);
+	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
-	registerCommands(context, settings, kbuild, checkTools);
-	return { settings, kbuild, kernelView, checkTools };
+	registerCommands(context, settings, kbuild, runner, checkTools);
+	return { settings, kbuild, runner, kernelView, checkTools };
 }
 
 /** Called by VS Code when the extension is shut down. */
@@ -43,6 +47,7 @@ function registerCommands(
 	context: vscode.ExtensionContext,
 	settings: Settings,
 	kbuild: Kbuild,
+	runner: Runner,
 	checkTools: (always: boolean) => Promise<void>,
 ): void {
 	/** The active editor's file, compiled to `kind`. */
@@ -78,6 +83,8 @@ function registerCommands(
 		['kernelWorkbench.assembleFile', compileCurrent('.s')],
 		['kernelWorkbench.buildModules', () => kbuild.buildModules()],
 		['kernelWorkbench.buildDirectory', (uri?: vscode.Uri) => kbuild.buildDirectory(uri)],
+		['kernelWorkbench.run', () => runner.run()],
+		['kernelWorkbench.stop', () => runner.stop()],
 		['kernelWorkbench.checkTools', () => checkTools(true)],
 		[
 			'kernelWorkbench.installTools',

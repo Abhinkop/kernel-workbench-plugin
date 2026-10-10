@@ -23,7 +23,7 @@ export class Kbuild {
 	}
 
 	/**
-	 * Configure: base config -> fragments -> variant and user options -> olddefconfig.
+	 * Configure: base config -> fragments -> QEMU, variant and user options -> olddefconfig.
 	 * Records the make arguments so that Build uses the same ones. Afterwards lists the
 	 * options Kconfig refused.
 	 */
@@ -38,6 +38,8 @@ export class Kbuild {
 		const dotconfig = path.join(out, '.config');
 		const base = path.resolve(this.root, config);
 		const options: Record<string, string> = {
+			// What a QEMU boot from an initramfs needs.
+			...settings.get<Record<string, string>>('configure.qemuOptions', {}),
 			...(variant === 'debug'
 				? settings.get<Record<string, string>>('configure.debugOptions', {})
 				: settings.get<Record<string, string>>('configure.releaseOptions', {})),

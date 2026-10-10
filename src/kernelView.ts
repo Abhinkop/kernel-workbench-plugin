@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isNative } from './arch';
 import type { Kbuild } from './kbuild';
+import type { Runner } from './runner';
 import type { Settings } from './settings';
 
 /** How a row's value is edited. The target rows route to their Select command. */
@@ -80,7 +81,8 @@ function action(
 }
 
 /**
- * The Kernel view: the steps (Configure, Build) and other actions as rows that run on a click, the
+ * The Kernel view: the steps (Configure, Build, Run) and the other actions as rows
+ * that run on a click, the
  * target (architecture, Debug/Release, base config) as rows that open their
  * picker, and the state of each step.
  */
@@ -96,10 +98,14 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 		context: vscode.ExtensionContext,
 		private readonly settings: Settings,
 		private readonly kbuild: Kbuild,
+		private readonly runner: Runner,
 	) {
 		context.subscriptions.push(
 			this._onDidChangeTreeData,
 			settings.onDidChange(() => this.refresh()),
+			runner.onDidChange(() => this.refresh()),
+			vscode.window.onDidOpenTerminal(() => this.refresh()),
+			vscode.window.onDidCloseTerminal(() => this.refresh()),
 			// Tracked from the events: when onDidEndTaskProcess fires, the task is still
 			// listed in vscode.tasks.taskExecutions.
 			vscode.tasks.onDidStartTaskProcess(e => {
@@ -167,6 +173,15 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 					'tools',
 					configured ? target : `${target} (not configured yet)`,
 				),
+				this.runner.running
+					? action('Stop VM', 'kernelWorkbench.stop', 'debug-stop', 'the VM is running')
+					: action(
+							'Run',
+							'kernelWorkbench.run',
+							'play',
+							`${target} in QEMU`,
+							`Boot the ${target} kernel in QEMU`,
+						),
 			],
 		});
 	}
@@ -263,6 +278,11 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 				icon: built ? 'pass' : 'circle-large-outline',
 				tooltip: image,
 			}),
+			new Item('VM', {
+				description: this.runner.running ? 'running' : 'stopped',
+				icon: this.runner.running ? 'vm-running' : 'vm',
+				contextValue: this.runner.running ? 'vmRunning' : undefined,
+			}),
 			this.toolsRow(),
 		);
 		return new Item('Status', { icon: 'pulse', children: items });
@@ -312,8 +332,9 @@ export function registerKernelView(
 	context: vscode.ExtensionContext,
 	settings: Settings,
 	kbuild: Kbuild,
+	runner: Runner,
 ): KernelView {
-	const view = new KernelView(context, settings, kbuild);
+	const view = new KernelView(context, settings, kbuild, runner);
 	context.subscriptions.push(
 		vscode.window.createTreeView('kernelWorkbench.kernel', {
 			treeDataProvider: view,
