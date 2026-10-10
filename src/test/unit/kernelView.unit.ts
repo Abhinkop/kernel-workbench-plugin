@@ -48,7 +48,7 @@ describe('the Kernel view', () => {
 
 	it('shows the steps, the target and the status', () => {
 		const { kernelView, settings } = open();
-		assert.deepEqual(labels(kernelView), ['Steps', 'More', 'Target', 'Status']);
+		assert.deepEqual(labels(kernelView), ['Steps', 'More', 'Target', 'Status', 'Options']);
 		const steps = kernelView.getChildren(group(kernelView, 'Steps'));
 		assert.deepEqual(
 			steps.map(r => [r.label, r.description, r.command?.command, r.contextValue]),

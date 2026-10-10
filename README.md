@@ -25,7 +25,12 @@ Configure, build, run and debug the Linux kernel from VS Code.
 - A **Kernel** tab in the activity bar. Its **Steps** group has **Configure** and **Build**
   rows, showing what they would configure or build, that run on a click; its collapsed
   **More** group has menuconfig, nconfig, Clean, Rebuild and Full clean, which are also in
-  the view's **…** menu and the Kernel Workbench menu. Its **Target** group
+  the view's **…** menu and the Kernel Workbench menu. Its collapsed **Options** group lists
+  the settings the steps use (toolchain, CROSS_COMPILE, ccache, make arguments, config
+  fragments and options, what happens to a step's terminal, how to boot, the initramfs, the
+  shared build directory, the kernel command line, QEMU arguments, memory, CPUs) with their
+  values; a click, or **Change…**, edits one with a picker or an input box, written where its
+  value comes from (the workspace if set there, else your user settings). Its **Target** group
   shows the tree's architecture (and whether it is a cross build), Debug or Release, and base
   config; click a row, or its **Change…** action, to pick another. Its **Status** group shows
   whether and when the target was configured and built (and which image), whether a VM is

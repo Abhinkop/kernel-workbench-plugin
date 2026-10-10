@@ -35,7 +35,7 @@ describe('Kernel Workbench in VS Code', () => {
 			const rows = await labels(x.kernelView, undefined, 2);
 			assert.deepStrictEqual(
 				rows.filter(l => !l.startsWith(' ')),
-				['Steps', 'More', 'Target', 'Status'],
+				['Steps', 'More', 'Target', 'Status', 'Options'],
 			);
 			assert.ok(
 				rows.some(l => /^ {2}Architecture — \w+/.test(l)),

@@ -3,16 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { isNative } from './arch';
 import type { Kbuild } from './kbuild';
+import { describeOption, editOption, OPTIONS, type OptionSpec } from './options';
 import type { Runner } from './runner';
 import type { Settings } from './settings';
-
-/** How a row's value is edited. The target rows route to their Select command. */
-export interface OptionSpec {
-	/** kernelWorkbench.<key>, or $arch, $variant and $config for the target */
-	key: string;
-	label: string;
-	kind: 'enum';
-}
 
 interface ItemOptions {
 	description?: string;
@@ -82,7 +75,7 @@ function action(
 
 /**
  * The Kernel view: the steps (Configure, Build, Run, Debug) and the other actions as rows
- * that run on a click, the
+ * that run on a click, the options they use, the
  * target (architecture, Debug/Release, base config) as rows that open their
  * picker, and the state of each step.
  */
@@ -144,7 +137,13 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 		if (item) {
 			return item.children ?? [];
 		}
-		return [this.stepsGroup(), this.moreGroup(), this.targetGroup(), this.statusGroup()];
+		return [
+			this.stepsGroup(),
+			this.moreGroup(),
+			this.targetGroup(),
+			this.statusGroup(),
+			this.optionsGroup(),
+		];
 	}
 
 	/** The target as the step rows name it: "arm64 Debug". */
@@ -299,6 +298,23 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 		return new Item('Status', { icon: 'pulse', children: items });
 	}
 
+	/** The options the steps use, each edited by its picker or input box on a click. */
+	optionsGroup(): Item {
+		return new Item('Options', {
+			icon: 'settings',
+			collapsed: true,
+			children: OPTIONS.map(
+				option =>
+					new Item(option.label, {
+						description: describeOption(this.settings, option),
+						tooltip: `kernelWorkbench.${option.key}`,
+						contextValue: 'edit',
+						option,
+					}),
+			),
+		});
+	}
+
 	/** The Tools row: all installed, or the missing ones listed, with Install inline. */
 	private toolsRow(): Item {
 		const tools = this.tools;
@@ -339,6 +355,7 @@ const SELECT_COMMANDS: Record<string, string> = {
 };
 
 /** Registers the Kernel view and the "Change…" action of its rows. */
+// (target rows run their Select command; option rows their editor)
 export function registerKernelView(
 	context: vscode.ExtensionContext,
 	settings: Settings,
@@ -352,9 +369,15 @@ export function registerKernelView(
 			showCollapseAll: false,
 		}),
 		vscode.commands.registerCommand('kernelWorkbench.editItem', async (item?: Item) => {
-			const command = item?.option && SELECT_COMMANDS[item.option.key];
+			const option = item?.option;
+			if (!option) {
+				return;
+			}
+			const command = SELECT_COMMANDS[option.key];
 			if (command) {
 				await vscode.commands.executeCommand(command);
+			} else {
+				await editOption(settings, option);
 			}
 		}),
 	);
