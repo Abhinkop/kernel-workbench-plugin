@@ -72,6 +72,58 @@ async function contextMenuLabels(driver: WebDriver): Promise<string[] | undefine
 	return undefined;
 }
 
+/**
+ * Shows the Kernel Git container. A click on an Activity Bar item toggles its container, and
+ * the sidebar switches a moment after a click, so it is clicked until the sidebar shows it.
+ */
+async function openKernelGit(): Promise<void> {
+	const control = await until(
+		() => new ActivityBar().getViewControl('Kernel Git'),
+		10000,
+		'the Kernel Git view control',
+	);
+	const shown = async () =>
+		/kernel git|series/i.test(
+			await new SideBarView()
+				.getTitlePart()
+				.getTitle()
+				.catch(() => ''),
+		);
+	await until(
+		async () => {
+			if (await shown()) {
+				return true;
+			}
+			await control.click();
+			await new Promise(resolve => setTimeout(resolve, 500));
+			return shown();
+		},
+		15000,
+		'the Kernel Git container',
+	);
+}
+
+/** Shows the Explorer again, waiting for the sidebar to switch, so the next test starts clean. */
+async function showExplorer(): Promise<void> {
+	const control = await new ActivityBar().getViewControl('Explorer');
+	await until(
+		async () => {
+			const title = await new SideBarView()
+				.getTitlePart()
+				.getTitle()
+				.catch(() => '');
+			if (/explorer/i.test(title)) {
+				return true;
+			}
+			await control?.click();
+			await new Promise(resolve => setTimeout(resolve, 500));
+			return false;
+		},
+		15000,
+		'the Explorer',
+	);
+}
+
 describe('Kernel Workbench, clicked through', function () {
 	this.timeout(10 * 60 * 1000);
 	let kernel: CustomTreeSection;
@@ -244,14 +296,7 @@ describe('Kernel Workbench, clicked through', function () {
 	});
 
 	it('shows the branch’s series in the Kernel Git tab', async () => {
-		const control = await until(
-			() => new ActivityBar().getViewControl('Kernel Git'),
-			10000,
-			'the Kernel Git view control',
-		);
-		// With a single view in the container, the sidebar is titled after the view, which
-		// openView() does not expect: open it with a click and take its first section.
-		await control.click();
+		await openKernelGit();
 		const rows = await until(
 			async () => {
 				const sections = await new SideBarView().getContent().getSections();
@@ -277,7 +322,7 @@ describe('Kernel Workbench, clicked through', function () {
 		for (const label of expected) {
 			assert.ok(rows.includes(label), `"${label}" in ${rows.join(' | ')}`);
 		}
-		await (await new ActivityBar().getViewControl('Explorer'))?.click();
+		await showExplorer();
 	});
 
 	it('offers the dry run and the send in the command palette', async () => {
@@ -298,18 +343,15 @@ describe('Kernel Workbench, clicked through', function () {
 	});
 
 	it('offers to fetch or load a series in the Apply view', async () => {
-		const control = await until(
-			() => new ActivityBar().getViewControl('Kernel Git'),
-			10000,
-			'the Kernel Git view control',
-		);
-		await control.click();
+		await openKernelGit();
 		const welcome = await until(
 			async () => {
-				const section = await new SideBarView().getContent().getSection('Apply');
-				await section.expand();
-				// The welcome content, from the DOM: its text and its buttons' labels.
-				const views = await section.findElements(By.css('.welcome-view-content'));
+				// Expand the view (it may be collapsed), then read the welcome contents shown in
+				// the sidebar: the text and the buttons' labels.
+				await (await new SideBarView().getContent().getSection('Apply')).expand();
+				const views = await VSBrowser.instance.driver.findElements(
+					By.css('.sidebar .welcome-view-content'),
+				);
 				const texts = await Promise.all(views.map(v => v.getAttribute('textContent')));
 				const text = texts.join(' ').replace(/\s+/g, ' ');
 				return text.includes('b4') ? text : undefined;
@@ -319,7 +361,29 @@ describe('Kernel Workbench, clicked through', function () {
 		);
 		assert.ok(welcome.includes('Fetch Series from lore…'), welcome);
 		assert.ok(welcome.includes('Apply mbox or Patch Files…'), welcome);
-		await (await new ActivityBar().getViewControl('Explorer'))?.click();
+		await showExplorer();
+	});
+
+	it('offers to start a bisect in the Bisect view', async () => {
+		await openKernelGit();
+		const welcome = await until(
+			async () => {
+				// Expand the view (it may be collapsed), then read the welcome contents shown in
+				// the sidebar: the text and the buttons' labels.
+				await (await new SideBarView().getContent().getSection('Bisect')).expand();
+				const views = await VSBrowser.instance.driver.findElements(
+					By.css('.sidebar .welcome-view-content'),
+				);
+				const texts = await Promise.all(views.map(v => v.getAttribute('textContent')));
+				const text = texts.join(' ').replace(/\s+/g, ' ');
+				return text.includes('git bisect') ? text : undefined;
+			},
+			30000,
+			'the Bisect view’s welcome content',
+		);
+		assert.ok(welcome.includes('Start Bisect…'), welcome);
+		assert.ok(welcome.includes('Bisect Automatically with a Test Script…'), welcome);
+		await showExplorer();
 	});
 
 	describe('editor', () => {
