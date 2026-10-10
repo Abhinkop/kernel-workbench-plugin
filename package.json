@@ -365,6 +365,65 @@
 				"title": "Send Patches…",
 				"category": "Kernel",
 				"icon": "$(send)"
+			},
+			{
+				"command": "kernelWorkbench.apply.fetch",
+				"title": "Fetch Series from lore…",
+				"category": "Kernel",
+				"icon": "$(cloud-download)"
+			},
+			{
+				"command": "kernelWorkbench.apply.openFiles",
+				"title": "Apply mbox or Patch Files…",
+				"category": "Kernel",
+				"icon": "$(folder-opened)"
+			},
+			{
+				"command": "kernelWorkbench.apply.applyCurrent",
+				"title": "Apply to Current Branch",
+				"category": "Kernel",
+				"icon": "$(check)"
+			},
+			{
+				"command": "kernelWorkbench.apply.applyNewBranch",
+				"title": "Apply on New Branch…",
+				"category": "Kernel",
+				"icon": "$(git-branch)"
+			},
+			{
+				"command": "kernelWorkbench.apply.continue",
+				"title": "git am: Continue",
+				"category": "Kernel",
+				"icon": "$(debug-continue)"
+			},
+			{
+				"command": "kernelWorkbench.apply.skip",
+				"title": "git am: Skip Patch",
+				"category": "Kernel",
+				"icon": "$(debug-step-over)"
+			},
+			{
+				"command": "kernelWorkbench.apply.abort",
+				"title": "git am: Abort",
+				"category": "Kernel",
+				"icon": "$(debug-stop)"
+			},
+			{
+				"command": "kernelWorkbench.apply.showLog",
+				"title": "Show b4 Output",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.apply.openLink",
+				"title": "Open Series on lore",
+				"category": "Kernel",
+				"icon": "$(link-external)"
+			},
+			{
+				"command": "kernelWorkbench.apply.clear",
+				"title": "Clear Fetched Series",
+				"category": "Kernel",
+				"icon": "$(clear-all)"
 			}
 		],
 		"submenus": [
@@ -668,6 +727,56 @@
 					"command": "kernelWorkbench.series.send",
 					"when": "view == kernelWorkbench.series && kernelWorkbench.patchesGenerated",
 					"group": "3_send@2"
+				},
+				{
+					"command": "kernelWorkbench.apply.continue",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.amInProgress",
+					"group": "navigation@1"
+				},
+				{
+					"command": "kernelWorkbench.apply.skip",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.amInProgress",
+					"group": "navigation@2"
+				},
+				{
+					"command": "kernelWorkbench.apply.abort",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.amInProgress",
+					"group": "navigation@3"
+				},
+				{
+					"command": "kernelWorkbench.apply.applyCurrent",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.applyFetched && !kernelWorkbench.amInProgress",
+					"group": "navigation@4"
+				},
+				{
+					"command": "kernelWorkbench.apply.applyNewBranch",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.applyFetched && !kernelWorkbench.amInProgress",
+					"group": "navigation@5"
+				},
+				{
+					"command": "kernelWorkbench.apply.fetch",
+					"when": "view == kernelWorkbench.apply && !kernelWorkbench.amInProgress",
+					"group": "navigation@6"
+				},
+				{
+					"command": "kernelWorkbench.apply.openFiles",
+					"when": "view == kernelWorkbench.apply && !kernelWorkbench.amInProgress",
+					"group": "1_apply@1"
+				},
+				{
+					"command": "kernelWorkbench.apply.showLog",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.applyFetched",
+					"group": "2_series@1"
+				},
+				{
+					"command": "kernelWorkbench.apply.openLink",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.applyFetched",
+					"group": "2_series@2"
+				},
+				{
+					"command": "kernelWorkbench.apply.clear",
+					"when": "view == kernelWorkbench.apply && kernelWorkbench.applyFetched",
+					"group": "2_series@3"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -963,6 +1072,46 @@
 				{
 					"command": "kernelWorkbench.series.send",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.fetch",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.openFiles",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.applyCurrent",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.applyNewBranch",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.continue",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.skip",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.abort",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.showLog",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.openLink",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.apply.clear",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
@@ -1166,6 +1315,12 @@
 					"name": "Series",
 					"when": "kernelWorkbench.active",
 					"icon": "media/series.svg"
+				},
+				{
+					"id": "kernelWorkbench.apply",
+					"name": "Apply",
+					"when": "kernelWorkbench.active",
+					"icon": "media/apply.svg"
 				}
 			]
 		},
@@ -1174,6 +1329,11 @@
 				"view": "kernelWorkbench.series",
 				"contents": "No base for the series: the branch has no upstream and the ref in [kernelWorkbench.patches.base](command:workbench.action.openSettings?%5B%22kernelWorkbench.patches.base%22%5D) does not exist in this repository.\n[Pick the Base](command:kernelWorkbench.series.pickBase)",
 				"when": "kernelWorkbench.seriesNoBase"
+			},
+			{
+				"view": "kernelWorkbench.apply",
+				"contents": "Fetch a patch series from lore.kernel.org with b4, review it, then apply it with git am.\n[Fetch Series from lore…](command:kernelWorkbench.apply.fetch)\n[Apply mbox or Patch Files…](command:kernelWorkbench.apply.openFiles)",
+				"when": "kernelWorkbench.applyEmpty"
 			}
 		],
 		"problemMatchers": [
@@ -1644,6 +1804,18 @@
 						"type": "string",
 						"default": "patches/${branch}/v${version}",
 						"markdownDescription": "Where Generate Patches writes the series, relative to the kernel tree or absolute. `${branch}` and `${version}` are substituted.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.apply.addLink": {
+						"type": "boolean",
+						"default": true,
+						"markdownDescription": "When fetching a series with `b4 am`, add a `Link:` trailer to each patch (`-l`).",
+						"scope": "resource"
+					},
+					"kernelWorkbench.apply.addSignoff": {
+						"type": "boolean",
+						"default": false,
+						"markdownDescription": "When fetching a series with `b4 am`, add your `Signed-off-by:` to each patch (`-s`).",
 						"scope": "resource"
 					}
 				}

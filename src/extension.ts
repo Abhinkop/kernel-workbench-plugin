@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { registerApply } from './apply';
+import type { Apply, ApplyTree } from './apply';
 import { registerBlame } from './blame';
 import type { BlameAnnotations, BlameView } from './blame';
 import { followSelection } from './clangd';
@@ -37,6 +39,8 @@ export interface KernelWorkbench {
 	blame: { annotations: BlameAnnotations; blameView: BlameView };
 	/** The Series view: the branch's commits over its base, their checks, patches and sending. */
 	series: { series: Series; patches: Patches; sender: Sender; view: SeriesTree };
+	/** The Apply view: a series fetched with b4 or loaded from files, and git am. */
+	apply: { apply: Apply; view: ApplyTree };
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -67,6 +71,7 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 	const history = registerHistory(context, settings.root);
 	const blame = registerBlame(context, settings.root);
 	const series = registerSeries(context, settings);
+	const apply = registerApply(context, settings);
 	syncContextKeys(context, runner);
 	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
@@ -80,6 +85,7 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 		history,
 		blame,
 		series,
+		apply,
 		kernelView,
 		checkTools,
 	};

@@ -159,6 +159,15 @@ Configure, build, run and debug the Linux kernel from VS Code.
   in a tab, with the SMTP setup from `git config` (`sendemail.smtpServer` and so on, which
   you configure yourself); **Send Patches…** is offered only after a successful dry run of
   exactly these files, asks once, and sends in a terminal (SMTP may ask for a password).
+- **Apply** (the Kernel Git tab): **Fetch Series from lore…** takes a lore link or
+  Message-ID and runs `b4 am`, which takes the latest version, puts the patches in order and
+  collects the Reviewed-by/Acked-by/Tested-by from the replies (`kernelWorkbench.apply.addLink`
+  and `apply.addSignoff` add `Link:` and your `Signed-off-by:`); **Apply mbox or Patch
+  Files…** loads local files. The view shows the series, its base and the trailers before
+  anything is applied; **Apply to Current Branch** or **Apply on New Branch…** (at the
+  series' base-commit) runs `git am -3`. If `git am` stops, the view shows the patch and the
+  conflicted files, and **Continue** (refused while conflict markers remain), **Skip** and
+  **Abort** are in the toolbar.
 
 ## Requirements
 
