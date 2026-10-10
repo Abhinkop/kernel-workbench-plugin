@@ -1,153 +1,113 @@
-// Unit tests for the kernel-tree check. They need no VS Code:
-//   npm run test:unit
-import { test, type TestContext } from 'node:test';
+// The kernel-tree check: the version read from the top-level Makefile, and
+// git asked for the Linux root commit.
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { fakeGit, folderWith, KERNEL_MAKEFILE, kernelTree } from '../helpers/repo';
 import {
 	getKernelVersion,
 	isKernelTree,
 	isLinuxKernelRepo,
 	LINUX_ROOT_COMMIT,
 } from '../../kernelTree';
-// The module object itself, not an `import * as` copy, so that mocking execSync on it
-// replaces the execSync that kernelTree calls.
-import childProcess = require('child_process');
 
-/** The opening lines of a real kernel's top-level Makefile. */
-const KERNEL_MAKEFILE = [
-	'# SPDX-License-Identifier: GPL-2.0',
-	'VERSION = 6',
-	'PATCHLEVEL = 12',
-	'SUBLEVEL = 0',
-	'EXTRAVERSION =',
-	'NAME = Baby Opossum Posse',
-	'',
-].join('\n');
+describe('kernel tree detection', () => {
+	let git: ReturnType<typeof fakeGit> | undefined;
+	afterEach(() => git?.restore());
 
-/** A new empty folder holding the given files, mapped from name to contents. */
-function folderWith(files: Record<string, string>): string {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kernel-workbench-test-'));
-	for (const [name, contents] of Object.entries(files)) {
-		fs.writeFileSync(path.join(dir, name), contents);
-	}
-	return dir;
-}
+	describe('the version in the Makefile', () => {
+		it('is read from a kernel Makefile', () => {
+			assert.equal(getKernelVersion(kernelTree()), '6.12.0');
+		});
 
-/** Makes git report that the Linux root commit exists, as it does in a kernel clone. */
-function inLinuxRepo(t: TestContext): void {
-	t.mock.method(childProcess, 'execSync', () => Buffer.from('commit\n'));
-}
+		it('has EXTRAVERSION appended', () => {
+			const makefile = KERNEL_MAKEFILE.replace('EXTRAVERSION =', 'EXTRAVERSION = -rc5');
+			assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), '6.12.0-rc5');
+		});
 
-/** Makes git fail, as it does outside a repo or when the root commit is missing. */
-function notInLinuxRepo(t: TestContext): void {
-	t.mock.method(childProcess, 'execSync', () => {
-		throw new Error('fatal: Not a valid object name');
+		it('leaves out an empty SUBLEVEL', () => {
+			const makefile = 'VERSION = 2\nPATCHLEVEL = 6\nSUBLEVEL =\n';
+			assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), '2.6');
+		});
+
+		it('is undefined for an ordinary Makefile', () => {
+			const dir = folderWith({ Makefile: 'all:\n\tcc -o hello hello.c\n' });
+			assert.equal(getKernelVersion(dir), undefined);
+		});
+
+		it('needs both VERSION and PATCHLEVEL, non-empty', () => {
+			assert.equal(getKernelVersion(folderWith({ Makefile: 'VERSION = 6\n' })), undefined);
+			const empty = 'VERSION =\nPATCHLEVEL = 12\n';
+			assert.equal(getKernelVersion(folderWith({ Makefile: empty })), undefined);
+		});
+
+		it('does not take EXTRAVERSION for VERSION', () => {
+			const makefile = 'EXTRAVERSION = -rc5\nPATCHLEVEL = 12\n';
+			assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), undefined);
+		});
+
+		it('is not looked for past the first 500 bytes', () => {
+			const makefile = '#'.repeat(600) + '\n' + KERNEL_MAKEFILE;
+			assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), undefined);
+		});
+
+		it('is undefined when Makefile is a directory or the folder does not exist', () => {
+			const dir = folderWith({});
+			fs.mkdirSync(path.join(dir, 'Makefile'));
+			assert.equal(getKernelVersion(dir), undefined);
+			const missing = path.join(os.tmpdir(), 'kwb-test-does-not-exist');
+			assert.equal(getKernelVersion(missing), undefined);
+		});
 	});
-}
 
-test('the version of a kernel tree is read from its Makefile', () => {
-	assert.equal(getKernelVersion(folderWith({ Makefile: KERNEL_MAKEFILE })), '6.12.0');
-});
+	describe('the Linux root commit', () => {
+		it('is asked of git, in dir, by type', () => {
+			git = fakeGit('commit');
+			isLinuxKernelRepo('/src/linux');
+			assert.deepEqual(git.calls, [
+				{ command: `git cat-file -t ${LINUX_ROOT_COMMIT}`, cwd: '/src/linux' },
+			]);
+		});
 
-test('EXTRAVERSION is appended to the version', () => {
-	const makefile = KERNEL_MAKEFILE.replace('EXTRAVERSION =', 'EXTRAVERSION = -rc5');
-	assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), '6.12.0-rc5');
-});
+		it('makes a repository that contains it a Linux repo', () => {
+			git = fakeGit('commit');
+			assert.equal(isLinuxKernelRepo('/src/linux'), true);
+		});
 
-test('an empty SUBLEVEL is left out of the version', () => {
-	const makefile = 'VERSION = 2\nPATCHLEVEL = 6\nSUBLEVEL =\n';
-	assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), '2.6');
-});
+		it('must be a commit, not another kind of object', () => {
+			git = fakeGit('blob');
+			assert.equal(isLinuxKernelRepo('/src/linux'), false);
+		});
 
-test('a Linux repo with a kernel Makefile is a kernel tree', t => {
-	inLinuxRepo(t);
-	assert.equal(isKernelTree(folderWith({ Makefile: KERNEL_MAKEFILE })), true);
-});
+		it('is missing where git fails: no repository, no such folder, no git', () => {
+			git = fakeGit(undefined);
+			assert.equal(isLinuxKernelRepo('/src/linux'), false);
+		});
+	});
 
-test('a kernel Makefile outside a Linux repo is not a kernel tree', t => {
-	// For example, source unpacked from a kernel.org tarball.
-	notInLinuxRepo(t);
-	assert.equal(isKernelTree(folderWith({ Makefile: KERNEL_MAKEFILE })), false);
-});
+	describe('a kernel tree', () => {
+		it('is a Linux repo with a kernel Makefile', () => {
+			git = fakeGit('commit');
+			assert.equal(isKernelTree(kernelTree()), true);
+		});
 
-test('a Linux repo without a kernel Makefile is not a kernel tree', t => {
-	inLinuxRepo(t);
-	assert.equal(isKernelTree(folderWith({ Makefile: 'all:\n' })), false);
-});
+		it('is not a kernel Makefile outside a Linux repo, e.g. a kernel.org tarball', () => {
+			git = fakeGit(undefined);
+			assert.equal(isKernelTree(kernelTree()), false);
+		});
 
-test('Kbuild and Kconfig without a kernel Makefile are not enough', t => {
-	inLinuxRepo(t);
-	// VS Code activates the extension on Kbuild alone (workspaceContains:Kbuild),
-	// so this check is what keeps such folders from being treated as kernel trees.
-	const dir = folderWith({ Kbuild: '', Kconfig: '' });
-	assert.equal(getKernelVersion(dir), undefined);
-	assert.equal(isKernelTree(dir), false);
-});
+		it('is not a Linux repo without a kernel Makefile', () => {
+			git = fakeGit('commit');
+			assert.equal(isKernelTree(folderWith({ Makefile: 'all:\n' })), false);
+			// VS Code activates the extension on Kbuild alone (workspaceContains:Kbuild),
+			// so this check is what keeps such folders from being treated as kernel trees.
+			assert.equal(isKernelTree(folderWith({ Kbuild: '', Kconfig: '' })), false);
+		});
 
-test('an ordinary Makefile is not a kernel Makefile', () => {
-	const dir = folderWith({ Makefile: 'all:\n\tcc -o hello hello.c\n' });
-	assert.equal(getKernelVersion(dir), undefined);
-	assert.equal(isKernelTree(dir), false);
-});
-
-test('VERSION without PATCHLEVEL is not enough', () => {
-	assert.equal(getKernelVersion(folderWith({ Makefile: 'VERSION = 6\n' })), undefined);
-});
-
-test('an empty VERSION is not enough', () => {
-	const makefile = 'VERSION =\nPATCHLEVEL = 12\n';
-	assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), undefined);
-});
-
-test('EXTRAVERSION does not count as VERSION', () => {
-	const makefile = 'EXTRAVERSION = -rc5\nPATCHLEVEL = 12\n';
-	assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), undefined);
-});
-
-test('version lines past the first 500 bytes are not found', () => {
-	const makefile = '#'.repeat(600) + '\n' + KERNEL_MAKEFILE;
-	assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), undefined);
-});
-
-test('a directory named Makefile is not a kernel tree', () => {
-	const dir = folderWith({});
-	fs.mkdirSync(path.join(dir, 'Makefile'));
-	assert.equal(getKernelVersion(dir), undefined);
-	assert.equal(isKernelTree(dir), false);
-});
-
-test('a folder that does not exist is not a kernel tree', () => {
-	const dir = path.join(os.tmpdir(), 'kernel-workbench-test-does-not-exist');
-	assert.equal(getKernelVersion(dir), undefined);
-	assert.equal(isKernelTree(dir), false);
-});
-
-test('isLinuxKernelRepo asks git, in dir, for the type of the Linux root commit', t => {
-	const execSync = t.mock.method(childProcess, 'execSync', () => Buffer.from('commit\n'));
-	isLinuxKernelRepo('/src/linux');
-	assert.equal(execSync.mock.callCount(), 1);
-	const [command, options] = execSync.mock.calls[0].arguments as [
-		string,
-		childProcess.ExecSyncOptions,
-	];
-	assert.equal(command, `git cat-file -t ${LINUX_ROOT_COMMIT}`);
-	assert.equal(options.cwd, '/src/linux');
-});
-
-test('a repo containing the Linux root commit is a Linux repo', t => {
-	inLinuxRepo(t);
-	assert.equal(isLinuxKernelRepo('/src/linux'), true);
-});
-
-test('an object of another type under that hash is not a Linux repo', t => {
-	t.mock.method(childProcess, 'execSync', () => Buffer.from('blob\n'));
-	assert.equal(isLinuxKernelRepo('/src/linux'), false);
-});
-
-test('a folder where git fails is not a Linux repo', t => {
-	// Not a git repo, no root commit, no such folder, or git not installed.
-	notInLinuxRepo(t);
-	assert.equal(isLinuxKernelRepo('/src/linux'), false);
+		it('is not a folder that does not exist', () => {
+			git = fakeGit(undefined);
+			assert.equal(isKernelTree(path.join(os.tmpdir(), 'kwb-test-does-not-exist')), false);
+		});
+	});
 });

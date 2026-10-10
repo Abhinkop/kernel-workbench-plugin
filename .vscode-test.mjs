@@ -1,8 +1,9 @@
 import { defineConfig } from '@vscode/test-cli';
 import { fileURLToPath } from 'url';
 
-// The tests wait for activation, longer than mocha's 2 s default allows.
-const mocha = { timeout: 20000 };
+// describe/it as in the unit tests; the tests wait for activation, longer than mocha's 2 s
+// default allows.
+const mocha = { ui: 'bdd', timeout: 20000 };
 
 const fixture = name => fileURLToPath(new URL(`./test-fixtures/${name}`, import.meta.url));
 
