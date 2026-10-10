@@ -40,19 +40,25 @@
 		"commands": [
 			{
 				"command": "kernelWorkbench.selectArch",
-				"title": "Select Architecture",
+				"title": "Select Architecture…",
 				"category": "Kernel"
 			},
 			{
 				"command": "kernelWorkbench.selectVariant",
-				"title": "Select Debug / Release",
+				"title": "Select Debug or Release…",
 				"category": "Kernel"
 			},
 			{
 				"command": "kernelWorkbench.selectConfig",
-				"title": "Select Base Config",
+				"title": "Select Base Config…",
 				"category": "Kernel",
 				"icon": "$(file-code)"
+			},
+			{
+				"command": "kernelWorkbench.editItem",
+				"title": "Change…",
+				"category": "Kernel",
+				"icon": "$(edit)"
 			}
 		],
 		"menus": {
@@ -68,6 +74,41 @@
 				{
 					"command": "kernelWorkbench.selectConfig",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.editItem",
+					"when": "false"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "kernelWorkbench.editItem",
+					"when": "view == kernelWorkbench.kernel && viewItem == edit",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.editItem",
+					"when": "view == kernelWorkbench.kernel && viewItem == edit",
+					"group": "1_edit@1"
+				}
+			]
+		},
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "kernelWorkbench",
+					"title": "Kernel",
+					"icon": "media/kernel.svg"
+				}
+			]
+		},
+		"views": {
+			"kernelWorkbench": [
+				{
+					"id": "kernelWorkbench.kernel",
+					"name": "Kernel",
+					"when": "kernelWorkbench.active",
+					"icon": "media/kernel.svg"
 				}
 			]
 		},

@@ -45,10 +45,43 @@ export class Uri {
 	}
 }
 
+export class ThemeColor {
+	constructor(readonly id: string) {}
+}
+
+export class ThemeIcon {
+	constructor(
+		readonly id: string,
+		readonly color?: ThemeColor,
+	) {}
+}
+
+export const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 } as const;
+
+export class TreeItem {
+	description?: string | boolean;
+	iconPath?: unknown;
+	tooltip?: unknown;
+	contextValue?: string;
+	command?: { command: string; title: string; arguments?: unknown[] };
+	constructor(
+		public label: string,
+		public collapsibleState: number = TreeItemCollapsibleState.None,
+	) {}
+}
+
 export interface WorkspaceFolder {
 	uri: Uri;
 	name: string;
 	index: number;
+}
+
+/** A tree view created by the extension, with the provider it shows. */
+export interface TreeView {
+	id: string;
+	provider: unknown;
+	visible: boolean;
+	dispose(): void;
 }
 
 /** A prompt the extension showed: what kind, its message, the items offered. */
@@ -70,6 +103,8 @@ export const state = {
 	commands: new Map<string, (...args: any[]) => unknown>(),
 	/** Every executeCommand call, registered or not (e.g. setContext). */
 	executed: [] as { id: string; args: unknown[] }[],
+	/** Tree views, by 'tree:<view id>'. */
+	providers: {} as Record<string, TreeView>,
 };
 
 function ask(
@@ -140,6 +175,10 @@ function configuration(section?: string) {
 export const vscode = {
 	EventEmitter,
 	Uri,
+	ThemeColor,
+	ThemeIcon,
+	TreeItem,
+	TreeItemCollapsibleState,
 
 	workspace: {
 		workspaceFolders: [] as WorkspaceFolder[],
@@ -156,6 +195,16 @@ export const vscode = {
 		showInputBox: (options?: { title?: string; prompt?: string }) =>
 			ask('input', options?.title ?? options?.prompt, [], options),
 		showOpenDialog: (options?: { title?: string }) => ask('open', options?.title, [], options),
+		createTreeView: (id: string, options: { treeDataProvider: unknown }) => {
+			const view: TreeView = {
+				id,
+				provider: options.treeDataProvider,
+				visible: true,
+				dispose() {},
+			};
+			state.providers[`tree:${id}`] = view;
+			return view;
+		},
 	},
 
 	commands: {
@@ -178,6 +227,7 @@ export function reset(): void {
 	state.log = [];
 	state.config = {};
 	state.executed = [];
+	state.providers = {};
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
 	onDidChangeConfiguration.dispose();

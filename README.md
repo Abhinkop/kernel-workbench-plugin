@@ -2,8 +2,9 @@
 
 Configure, build, run and debug the Linux kernel from VS Code.
 
-> **Early development.** This version only detects kernel source trees. The Kernel panel,
-> build and QEMU/gdb support described in the extension's summary are not implemented yet.
+> **Early development.** This version detects kernel source trees and lets you pick the build
+> target. The build and QEMU/gdb support described in the extension's summary is not
+> implemented yet.
 
 ## Features
 
@@ -17,10 +18,13 @@ Configure, build, run and debug the Linux kernel from VS Code.
   `kernelWorkbench.configure.defconfig` (the base config) and `kernelWorkbench.buildDirectory`
   (by default `build/${arch}/${variant}` in the tree).
 - Pick the build target of a kernel tree from the Command Palette: **Kernel: Select
-  Architecture**, **Kernel: Select Debug / Release** and **Kernel: Select Base Config**. The
-  base configs offered are `defconfig`, the architecture's `arch/<arch>/configs/*_defconfig`,
-  `tinyconfig` and `allnoconfig`, or an existing `.config` file. The pick is kept per tree,
-  and the base config per architecture.
+  Architecture…**, **Kernel: Select Debug or Release…** and **Kernel: Select Base Config…**.
+  The base configs offered are `defconfig`, the architecture's
+  `arch/<arch>/configs/*_defconfig`, `tinyconfig` and `allnoconfig`, or an existing `.config`
+  file. The pick is kept per tree, and the base config per architecture.
+- A **Kernel** tab in the activity bar. Its **Target** group shows the tree's architecture
+  (and whether it is a cross build), Debug or Release, and base config; click a row, or its
+  **Change…** action, to pick another.
 
 ## Requirements
 
