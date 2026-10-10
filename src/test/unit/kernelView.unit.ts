@@ -90,6 +90,7 @@ describe('the Kernel view', () => {
 				['Clean', 'kernelWorkbench.clean'],
 				['Rebuild', 'kernelWorkbench.rebuild'],
 				['Full clean', 'kernelWorkbench.mrproper'],
+				['Build modules', 'kernelWorkbench.buildModules'],
 				['Check tools', 'kernelWorkbench.checkTools'],
 			],
 		);

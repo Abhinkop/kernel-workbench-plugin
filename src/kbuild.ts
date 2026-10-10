@@ -202,6 +202,102 @@ export class Kbuild {
 		return false;
 	}
 
+	/** make modules with the recorded arguments. */
+	async buildModules(): Promise<number> {
+		const state = this.settings.configured();
+		if (!state) {
+			vscode.window.showWarningMessage('Kernel: run Configure first.');
+			return 1;
+		}
+		const script = this.make(this.settings.makeArgs(state), 'modules');
+		return runTask(
+			this.folder,
+			`Modules ${state.arch} ${state.variant}`,
+			'bash',
+			['-c', script],
+			{
+				problemMatcher: ['$gcc'],
+			},
+		);
+	}
+
+	/**
+	 * Builds one directory of the tree, built-in objects and modules (make <dir>/).
+	 * @param uri a folder, or a file whose folder is built; the active editor's when omitted
+	 */
+	async buildDirectory(uri?: vscode.Uri): Promise<number> {
+		const state = this.settings.configured();
+		if (!state) {
+			vscode.window.showWarningMessage('Kernel: run Configure first.');
+			return 1;
+		}
+		const target = uri ?? vscode.window.activeTextEditor?.document.uri;
+		if (!target) {
+			return 1;
+		}
+		let dir = target.fsPath;
+		if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+			dir = path.dirname(dir);
+		}
+		const rel = path.relative(this.root, dir);
+		if (!rel || rel.startsWith('..')) {
+			vscode.window.showWarningMessage('Kernel: pick a directory inside the kernel tree.');
+			return 1;
+		}
+		// make <dir>/ compiles the directory but links no modules (that is modpost's job),
+		// so link each module it compiled: Kbuild leaves a <name>.mod next to each module's
+		// objects.
+		const makeArgs = this.settings.makeArgs(state);
+		const script = [
+			'set -e',
+			this.make(makeArgs, `${rel}/`),
+			`mods=$(cd ${sq(state.buildDir)} && find ${sq(rel)} -name '*.mod' 2>/dev/null | ` +
+				`sed 's/[.]mod$/.ko/' || true)`,
+			`if [ -n "$mods" ]; then ${this.make(makeArgs)} $mods; ` +
+				`echo "==> modules:"; echo "$mods"; fi`,
+		].join('\n');
+		return runTask(this.folder, `Build ${rel}/`, 'bash', ['-c', script], {
+			problemMatcher: ['$gcc'],
+		});
+	}
+
+	/** Compiles just one file (Ctrl+F7); '.i' and '.s' open the result beside the editor. */
+	async compileFile(file: vscode.Uri, kind: '.o' | '.i' | '.s'): Promise<number> {
+		const state = this.settings.configured();
+		if (!state) {
+			vscode.window.showWarningMessage('Kernel: run Configure first.');
+			return 1;
+		}
+		const rel = path.relative(this.root, file.fsPath);
+		if (rel.startsWith('..') || !/\.[cS]$/.test(rel)) {
+			vscode.window.showWarningMessage(
+				'Kernel: open a .c or .S file inside the kernel tree.',
+			);
+			return 1;
+		}
+		const target = rel.replace(/\.[cS]$/, kind);
+		const script = this.make(this.settings.makeArgs(state), target);
+		const code = await runTask(
+			this.folder,
+			`Compile ${path.basename(target)}`,
+			'bash',
+			['-c', script],
+			{
+				problemMatcher: ['$gcc'],
+			},
+		);
+		if (code === 0 && kind !== '.o') {
+			const outFile = path.join(state.buildDir, target);
+			if (fs.existsSync(outFile)) {
+				await vscode.window.showTextDocument(vscode.Uri.file(outFile), {
+					preview: true,
+					viewColumn: vscode.ViewColumn.Beside,
+				});
+			}
+		}
+		return code;
+	}
+
 	/** The kernel image of a configured build. */
 	image(state: Configured): string {
 		return path.join(state.buildDir, archInfo(state.arch).image);

@@ -66,6 +66,11 @@ Configure, build, run and debug the Linux kernel from VS Code.
   or Debug/Release points clangd at that build if it exists; **Kernel: Point clangd at the
   Selected Build** does so on demand. `kernelWorkbench.clangd.updateCompileCommands` turns
   this off.
+- **Kernel: Compile Current File** (Ctrl+F7 in a C file), **Preprocess Current File (.i)**
+  and **Show Assembly for Current File (.s)** compile one file of the configured build; the
+  `.i` and `.s` open beside the editor. **Build This Directory**, in the editor's and the
+  Explorer's right-click menus under **Kernel Workbench**, builds a directory's objects and
+  links the modules it compiled. **Build Modules** (under More) runs `make modules`.
 
 ## Requirements
 

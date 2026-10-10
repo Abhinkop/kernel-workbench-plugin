@@ -112,6 +112,31 @@
 				"command": "kernelWorkbench.followSelection",
 				"title": "Point clangd at the Selected Build",
 				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.compileFile",
+				"title": "Compile Current File",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.preprocessFile",
+				"title": "Preprocess Current File (.i)",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.assembleFile",
+				"title": "Show Assembly for Current File (.s)",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.buildModules",
+				"title": "Build Modules",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.buildDirectory",
+				"title": "Build This Directory",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -119,9 +144,60 @@
 				"id": "kernelWorkbench.target",
 				"label": "Kernel Workbench",
 				"icon": "$(chip)"
+			},
+			{
+				"id": "kernelWorkbench.editorContext",
+				"label": "Kernel Workbench"
+			},
+			{
+				"id": "kernelWorkbench.explorerContext",
+				"label": "Kernel Workbench"
 			}
 		],
 		"menus": {
+			"editor/context": [
+				{
+					"submenu": "kernelWorkbench.editorContext",
+					"when": "kernelWorkbench.active && resourceScheme == file",
+					"group": "z_kernel@1"
+				}
+			],
+			"explorer/context": [
+				{
+					"submenu": "kernelWorkbench.explorerContext",
+					"when": "kernelWorkbench.active",
+					"group": "z_kernel@1"
+				}
+			],
+			"kernelWorkbench.editorContext": [
+				{
+					"command": "kernelWorkbench.compileFile",
+					"when": "kernelWorkbench.active && resourceExtname =~ /^\\.[cS]$/",
+					"group": "1_build@1"
+				},
+				{
+					"command": "kernelWorkbench.preprocessFile",
+					"when": "kernelWorkbench.active && resourceExtname == .c",
+					"group": "1_build@2"
+				},
+				{
+					"command": "kernelWorkbench.assembleFile",
+					"when": "kernelWorkbench.active && resourceExtname == .c",
+					"group": "1_build@3"
+				},
+				{
+					"command": "kernelWorkbench.buildDirectory",
+					"when": "kernelWorkbench.active && resourceScheme == file",
+					"group": "1_build@4"
+				}
+			],
+			"kernelWorkbench.explorerContext": [
+				{
+					"command": "kernelWorkbench.buildDirectory",
+					"when": "kernelWorkbench.active",
+					"group": "2_build@1"
+				}
+			],
 			"editor/title": [
 				{
 					"submenu": "kernelWorkbench.target",
@@ -176,6 +252,11 @@
 					"group": "2_clean@3"
 				},
 				{
+					"command": "kernelWorkbench.buildModules",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "3_tools@1"
+				},
+				{
 					"command": "kernelWorkbench.checkTools",
 					"when": "view == kernelWorkbench.kernel",
 					"group": "3_tools@3"
@@ -217,6 +298,10 @@
 				{
 					"command": "kernelWorkbench.mrproper",
 					"group": "4_tools@3"
+				},
+				{
+					"command": "kernelWorkbench.buildModules",
+					"group": "4_tools@4"
 				}
 			],
 			"commandPalette": [
@@ -275,6 +360,26 @@
 				{
 					"command": "kernelWorkbench.followSelection",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.compileFile",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.preprocessFile",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.assembleFile",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.buildModules",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.buildDirectory",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
@@ -319,6 +424,11 @@
 				"command": "kernelWorkbench.build",
 				"key": "f7",
 				"when": "kernelWorkbench.active"
+			},
+			{
+				"command": "kernelWorkbench.compileFile",
+				"key": "ctrl+f7",
+				"when": "kernelWorkbench.active && editorLangId == c"
 			}
 		],
 		"configuration": [

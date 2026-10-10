@@ -3,7 +3,7 @@
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
-import { extensionContext, state, vscode, workspaceFolder } from '../helpers/vscode';
+import { extensionContext, fileUri, state, vscode, workspaceFolder } from '../helpers/vscode';
 import { kernelTree } from '../helpers/repo';
 import { Kbuild, scriptsConfigArgs } from '../../kbuild';
 import { Settings } from '../../settings';
@@ -190,6 +190,45 @@ describe('kbuild', () => {
 		const kbuild = new Kbuild(settings);
 		assert.equal(kbuild.checkTools(['CROSS_COMPILE=no-such-prefix-'], 'arm64'), false);
 		assert.match(String(state.log.pop()?.message), /missing build: no-such-prefix-gcc/);
+	});
+
+	it('compiles one file, opening .i beside the editor, and builds a directory', async () => {
+		const { settings, kbuild, log, root } = fake();
+		await kbuild.configure();
+		fs.mkdirSync(path.join(root, 'drivers', 'x'), { recursive: true });
+		fs.writeFileSync(path.join(root, 'drivers', 'x', 'y.c'), 'int y;\n');
+		const file = fileUri(path.join(root, 'drivers/x/y.c'));
+		assert.equal(await kbuild.compileFile(file, '.o'), 0);
+		assert.match(log(), /^make .* drivers\/x\/y\.o$/m);
+		assert.equal(await kbuild.compileFile(fileUri(path.join(root, 'Kbuild')), '.o'), 1);
+		assert.match(String(state.log.pop()?.message), /open a \.c or \.S file/);
+
+		const preprocessed = path.join(settings.buildDir(), 'drivers', 'x', 'y.i');
+		fs.mkdirSync(path.dirname(preprocessed), { recursive: true });
+		fs.writeFileSync(preprocessed, '');
+		assert.equal(await kbuild.compileFile(file, '.i'), 0);
+		assert.deepEqual(
+			state.shown.map(s => s.uri),
+			[vscode.Uri.file(preprocessed).toString()],
+		);
+		assert.deepEqual(state.shown[0].options, {
+			preview: true,
+			viewColumn: vscode.ViewColumn.Beside,
+		});
+
+		assert.equal(await kbuild.buildDirectory(fileUri(path.join(root, 'drivers/x'))), 0);
+		assert.match(log(), /^make .* drivers\/x\/$/m);
+		assert.equal(await kbuild.buildDirectory(file), 0, "a file's directory");
+		assert.equal(await kbuild.buildDirectory(fileUri('/')), 1, 'outside the tree');
+	});
+
+	it('builds the modules, after Configure', async () => {
+		const { kbuild, log } = fake();
+		assert.equal(await kbuild.buildModules(), 1);
+		assert.match(String(state.log.pop()?.message), /run Configure first/);
+		await kbuild.configure();
+		assert.equal(await kbuild.buildModules(), 0);
+		assert.match(log(), /^make .* modules$/m);
 	});
 
 	it('knows the kernel image of a build', () => {

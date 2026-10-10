@@ -89,6 +89,7 @@ export const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3
 export const TaskRevealKind = { Always: 1, Silent: 2, Never: 3 } as const;
 export const TaskPanelKind = { Shared: 1, Dedicated: 2, New: 3 } as const;
 export const TerminalLocation = { Panel: 1, Editor: 2 } as const;
+export const ViewColumn = { Active: -1, Beside: -2, One: 1 } as const;
 
 export class ProcessExecution {
 	constructor(
@@ -158,6 +159,8 @@ export const state = {
 	clipboard: '',
 	/** Installed extensions, by id, for extensions.getExtension. */
 	extensions: {} as Record<string, unknown>,
+	/** Documents shown with window.showTextDocument. */
+	shown: [] as { uri: string; options: unknown }[],
 };
 
 function ask(
@@ -246,6 +249,7 @@ export const vscode = {
 	TaskRevealKind,
 	TaskPanelKind,
 	TerminalLocation,
+	ViewColumn,
 
 	workspace: {
 		workspaceFolders: [] as WorkspaceFolder[],
@@ -271,6 +275,13 @@ export const vscode = {
 			};
 			state.providers[`tree:${id}`] = view;
 			return view;
+		},
+		/** The editor the extension sees as active; tests set it. */
+		activeTextEditor: undefined as { document: { uri: Uri } } | undefined,
+		showTextDocument: async (target: Uri | { uri: Uri }, options?: unknown) => {
+			const uri = 'uri' in target ? target.uri : target;
+			state.shown.push({ uri: uri.toString(), options });
+			return { document: { uri } };
 		},
 		get terminals(): Terminal[] {
 			return state.terminals.filter(t => !t.disposed);
@@ -380,6 +391,8 @@ export function reset(): void {
 	state.runTasks = true;
 	state.clipboard = '';
 	state.extensions = {};
+	state.shown = [];
+	vscode.window.activeTextEditor = undefined;
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
 	for (const emitter of [
@@ -397,6 +410,11 @@ export function reset(): void {
 /** Queue answers for the next prompts (a function gets the items offered). */
 export function answer(...answers: unknown[]): void {
 	state.answers.push(...answers);
+}
+
+/** A file Uri, typed as VS Code's, for calling the extension's functions. */
+export function fileUri(p: string): vscodeTypes.Uri {
+	return Uri.file(p) as unknown as vscodeTypes.Uri;
 }
 
 /** A workspace folder for `dir`, as VS Code passes it. */

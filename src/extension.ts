@@ -45,6 +45,11 @@ function registerCommands(
 	kbuild: Kbuild,
 	checkTools: (always: boolean) => Promise<void>,
 ): void {
+	/** The active editor's file, compiled to `kind`. */
+	const compileCurrent = (kind: '.o' | '.i' | '.s') => () => {
+		const editor = vscode.window.activeTextEditor;
+		return editor ? kbuild.compileFile(editor.document.uri, kind) : undefined;
+	};
 	// Switching arch or variant points clangd at that build, if it exists.
 	const reselect = (pick: () => Promise<void>) => async () => {
 		await pick();
@@ -68,6 +73,11 @@ function registerCommands(
 		['kernelWorkbench.mrproper', () => kbuild.mrproper()],
 		['kernelWorkbench.menuconfig', () => kbuild.interactiveConfig('menuconfig')],
 		['kernelWorkbench.nconfig', () => kbuild.interactiveConfig('nconfig')],
+		['kernelWorkbench.compileFile', compileCurrent('.o')],
+		['kernelWorkbench.preprocessFile', compileCurrent('.i')],
+		['kernelWorkbench.assembleFile', compileCurrent('.s')],
+		['kernelWorkbench.buildModules', () => kbuild.buildModules()],
+		['kernelWorkbench.buildDirectory', (uri?: vscode.Uri) => kbuild.buildDirectory(uri)],
 		['kernelWorkbench.checkTools', () => checkTools(true)],
 		[
 			'kernelWorkbench.installTools',

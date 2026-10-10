@@ -182,6 +182,20 @@ describe('the manifest', () => {
 		});
 	});
 
+	it('keeps the editor and Explorer right-click menus about the file', () => {
+		const steps = ['kernelWorkbench.configure', 'kernelWorkbench.build'];
+		for (const menu of [
+			'editor/context',
+			'explorer/context',
+			'kernelWorkbench.editorContext',
+			'kernelWorkbench.explorerContext',
+		]) {
+			for (const item of contributes.menus?.[menu] ?? []) {
+				assert.ok(!steps.includes(item.command), `${menu} must not offer ${item.command}`);
+			}
+		}
+	});
+
 	it('ties every row action to its kind of row', () => {
 		// A command on a row's menu is about that row, never on every row of a view.
 		for (const item of contributes.menus?.['view/item/context'] ?? []) {

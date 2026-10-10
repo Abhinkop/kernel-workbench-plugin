@@ -199,6 +199,7 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 					'clear-all',
 					'make mrproper (removes .config)',
 				),
+				action('Build modules', 'kernelWorkbench.buildModules', 'package', 'make modules'),
 				action(
 					'Check tools',
 					'kernelWorkbench.checkTools',
