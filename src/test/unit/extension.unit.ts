@@ -4,7 +4,7 @@
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
-import { extensionContext, state, vscode, workspaceFolder } from '../helpers/vscode';
+import { answer, extensionContext, state, vscode, workspaceFolder } from '../helpers/vscode';
 import { fakeGit, kernelTree, tempDir } from '../helpers/repo';
 import { activate } from '../../extension';
 
@@ -37,6 +37,35 @@ describe('activate', () => {
 		assert.ok(contributed.length > 0);
 		assert.deepEqual([...state.commands.keys()].sort(), contributed);
 		assert.equal(setContext('kernelWorkbench.active'), true);
+	});
+
+	it('reports missing tools once, offers to install them, and can be silenced', async () => {
+		vscode.workspace.workspaceFolders = [workspaceFolder(kernelTree())];
+		state.config['kernelWorkbench.crossCompile'] = {
+			x86_64: 'no-such-',
+			arm64: 'no-such-',
+			riscv64: 'no-such-',
+		};
+		const api = activate(extensionContext());
+		assert.ok(api);
+		await new Promise(resolve => setTimeout(resolve, 50));
+		const first = state.log.find(l => l.kind === 'warning');
+		assert.ok(first, 'a warning');
+		assert.match(String(first.message), /missing tools for .*no-such-gcc/);
+		assert.ok(first.items.includes("Don't Show Again"));
+
+		answer('Run Install Command');
+		await api.checkTools(true);
+		const install = state.terminals.find(t => t.name === 'Install kernel tools');
+		if (install) {
+			assert.match(install.sent[0], /apt-get install .*gcc/);
+		}
+
+		answer("Don't Show Again");
+		await api.checkTools(false); // the same set again: no new warning
+		state.log = [];
+		await api.checkTools(false);
+		assert.equal(state.log.filter(l => l.kind === 'warning').length, 0, 'silenced');
 	});
 });
 

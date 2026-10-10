@@ -32,7 +32,10 @@ describe('Configure in VS Code', function () {
 			'Configure — x86_64 Debug from defconfig',
 			'Build — x86_64 Debug (not configured yet)',
 		]);
-		assert.deepStrictEqual(await status(), ['Configured — not yet', 'Built — not yet']);
+		assert.deepStrictEqual((await status()).slice(0, 2), [
+			'Configured — not yet',
+			'Built — not yet',
+		]);
 	});
 
 	it('configures with the Debug options, and closes its terminal', async () => {

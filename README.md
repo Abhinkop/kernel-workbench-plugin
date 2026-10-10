@@ -52,6 +52,13 @@ Configure, build, run and debug the Linux kernel from VS Code.
   forgets the configuration; **Run menuconfig** and **Run nconfig**, which open on the
   configured build in a terminal in the editor area (they need at least 19 lines by 80
   columns) and close when they exit cleanly.
+- A check of the host's tools for the selected toolchain (compilers, binutils, make, flex,
+  bison, bc, perl, python3, ccache when used, the libelf and OpenSSL headers), when the
+  extension loads and after every change. The **Status › Tools** row of the Kernel tab lists
+  what is missing, with an inline **Install Missing Tools** action that runs the apt-get
+  command in a terminal; a warning offers the same once per set of missing tools, until
+  **Don't Show Again**. **Kernel: Check Required Tools** (also under More) checks on demand.
+  Configure and Build refuse to start without the tools, naming them.
 
 ## Requirements
 

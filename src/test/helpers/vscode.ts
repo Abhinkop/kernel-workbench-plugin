@@ -154,6 +154,8 @@ export const state = {
 	tasks: [] as Task[],
 	/** executeTask runs the process for real; a number instead is reported as the exit code. */
 	runTasks: true as boolean | number,
+	/** What was last copied with env.clipboard. */
+	clipboard: '',
 };
 
 function ask(
@@ -337,6 +339,15 @@ export const vscode = {
 		},
 	},
 
+	env: {
+		clipboard: {
+			readText: async () => state.clipboard,
+			writeText: async (text: string) => {
+				state.clipboard = text;
+			},
+		},
+	},
+
 	commands: {
 		registerCommand: (id: string, callback: (...args: any[]) => unknown) => {
 			state.commands.set(id, callback);
@@ -361,6 +372,7 @@ export function reset(): void {
 	state.terminals = [];
 	state.tasks = [];
 	state.runTasks = true;
+	state.clipboard = '';
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
 	for (const emitter of [

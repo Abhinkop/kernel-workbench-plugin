@@ -72,10 +72,9 @@ describe('the Kernel view', () => {
 			'Build — Debug',
 			'Base config — defconfig',
 		]);
-		assert.deepEqual(labels(kernelView, group(kernelView, 'Status')), [
-			'Configured — not yet',
-			'Built — not yet',
-		]);
+		const status = labels(kernelView, group(kernelView, 'Status'));
+		assert.deepEqual(status.slice(0, 2), ['Configured — not yet', 'Built — not yet']);
+		assert.match(status[2], /^Tools — (all installed|missing \d+)$/);
 	});
 
 	it('offers the other actions under More, collapsed, as rows that run a command', () => {
@@ -91,6 +90,7 @@ describe('the Kernel view', () => {
 				['Clean', 'kernelWorkbench.clean'],
 				['Rebuild', 'kernelWorkbench.rebuild'],
 				['Full clean', 'kernelWorkbench.mrproper'],
+				['Check tools', 'kernelWorkbench.checkTools'],
 			],
 		);
 		assert.ok(rows.every(r => r.contextValue === 'step' && r.tooltip));
@@ -101,6 +101,32 @@ describe('the Kernel view', () => {
 				`${row.label} runs a real command`,
 			);
 		}
+	});
+
+	it('shows the tool check: all installed, or the missing ones with Install', () => {
+		const { kernelView } = open();
+		kernelView.setTools('', '', []);
+		let [, , tools] = kernelView.getChildren(group(kernelView, 'Status'));
+		assert.deepEqual(
+			[tools.label, tools.description, tools.contextValue],
+			['Tools', 'all installed', undefined],
+		);
+		kernelView.setTools('build: flex, bison', 'sudo apt-get install flex bison', [
+			'flex (flex)',
+			'bison (bison)',
+		]);
+		[, , tools] = kernelView.getChildren(group(kernelView, 'Status'));
+		assert.deepEqual(
+			[tools.description, tools.contextValue, tools.tooltip],
+			['missing 2', 'toolsMissing', 'build: flex, bison'],
+		);
+		assert.deepEqual(
+			kernelView.getChildren(tools).map(t => t.label),
+			['flex (flex)', 'bison (bison)'],
+		);
+		kernelView.setTools('build: a header', '', ['a header']);
+		[, , tools] = kernelView.getChildren(group(kernelView, 'Status'));
+		assert.equal(tools.contextValue, undefined, 'nothing to install');
 	});
 
 	it('shows the picked values, and re-renders when they change', async () => {
@@ -169,14 +195,14 @@ describe('the Kernel view', () => {
 				.pop()?.args[1];
 		const done = runTask(settings.folder, 'Configure x86_64 Debug', 'sh', ['-c', 'sleep 0.3']);
 		await new Promise(resolve => setTimeout(resolve, 100));
-		assert.deepEqual(status(), [
+		assert.deepEqual(status().slice(0, 3), [
 			'Running — Configure x86_64 Debug',
 			'Configured — not yet',
 			'Built — not yet',
 		]);
 		assert.equal(busy(), true);
 		await done;
-		assert.deepEqual(status(), ['Configured — not yet', 'Built — not yet']);
+		assert.deepEqual(status().slice(0, 2), ['Configured — not yet', 'Built — not yet']);
 		assert.equal(busy(), false);
 	});
 

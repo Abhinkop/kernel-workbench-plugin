@@ -89,6 +89,8 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 	/** Kernel tasks whose process is running. */
 	private readonly running = new Set<vscode.TaskExecution>();
+	/** The last tool check: what is missing, how to install it, and the list to show. */
+	private tools = { missing: '', command: '', list: [] as string[] };
 
 	constructor(
 		context: vscode.ExtensionContext,
@@ -115,6 +117,12 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 				this.refresh();
 			}),
 		);
+	}
+
+	/** Shows the result of a tool check: the missing ones, or none. */
+	setTools(missing: string, command: string, list: string[] = []): void {
+		this.tools = { missing, command, list };
+		this.refresh();
 	}
 
 	refresh(): void {
@@ -191,6 +199,12 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 					'clear-all',
 					'make mrproper (removes .config)',
 				),
+				action(
+					'Check tools',
+					'kernelWorkbench.checkTools',
+					'search',
+					'are the required tools installed?',
+				),
 			],
 		});
 	}
@@ -248,8 +262,26 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 				icon: built ? 'pass' : 'circle-large-outline',
 				tooltip: image,
 			}),
+			this.toolsRow(),
 		);
 		return new Item('Status', { icon: 'pulse', children: items });
+	}
+
+	/** The Tools row: all installed, or the missing ones listed, with Install inline. */
+	private toolsRow(): Item {
+		const tools = this.tools;
+		if (!tools.missing) {
+			return new Item('Tools', { description: 'all installed', icon: 'pass' });
+		}
+		return new Item('Tools', {
+			description: `missing ${tools.list.length || ''}`.trim(),
+			icon: 'warning',
+			color: 'problemsWarningIcon.foreground',
+			tooltip: tools.missing,
+			contextValue: tools.command ? 'toolsMissing' : undefined,
+			children: tools.list.map(tool => new Item(tool, { icon: 'circle-small' })),
+			collapsed: true,
+		});
 	}
 }
 

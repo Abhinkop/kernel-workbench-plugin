@@ -96,6 +96,17 @@
 				"command": "kernelWorkbench.nconfig",
 				"title": "Run nconfig",
 				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.checkTools",
+				"title": "Check Required Tools",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.installTools",
+				"title": "Install Missing Tools",
+				"category": "Kernel",
+				"icon": "$(cloud-download)"
 			}
 		],
 		"submenus": [
@@ -158,6 +169,11 @@
 					"command": "kernelWorkbench.mrproper",
 					"when": "view == kernelWorkbench.kernel",
 					"group": "2_clean@3"
+				},
+				{
+					"command": "kernelWorkbench.checkTools",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "3_tools@3"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -242,6 +258,14 @@
 				{
 					"command": "kernelWorkbench.nconfig",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.checkTools",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.installTools",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
@@ -254,6 +278,11 @@
 					"command": "kernelWorkbench.editItem",
 					"when": "view == kernelWorkbench.kernel && viewItem == edit",
 					"group": "1_edit@1"
+				},
+				{
+					"command": "kernelWorkbench.installTools",
+					"when": "view == kernelWorkbench.kernel && viewItem == toolsMissing",
+					"group": "inline"
 				}
 			]
 		},
