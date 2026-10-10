@@ -2,25 +2,16 @@
 // test:integration): the Series view on a two-commit branch, checkpatch on its commits with
 // the findings in Problems, and on the working changes.
 import * as assert from 'assert';
-import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { api, child, file, labels, tree } from './helpers';
+import { api, child, file, labels, seriesBranch, tree } from './helpers';
 import type { KernelWorkbench } from '../../extension';
 
 describe('Series in VS Code', function () {
 	this.timeout(10 * 60 * 1000);
 	let x: KernelWorkbench;
-	const git = (...args: string[]) =>
-		execFileSync(
-			'git',
-			['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args],
-			{
-				cwd: tree(),
-				encoding: 'utf8',
-			},
-		);
+	const git = seriesBranch.git;
 	const cfg = () =>
 		vscode.workspace.getConfiguration(
 			'kernelWorkbench',
@@ -32,23 +23,7 @@ describe('Series in VS Code', function () {
 
 	before(async () => {
 		x = await api();
-		// A two-patch series over kwb-base: the first with style errors, the second clean.
-		git('branch', '-f', 'kwb-base', 'HEAD');
-		git('checkout', '-q', '-B', 'kwb-series', 'kwb-base');
-		const f = path.join(tree(), driver);
-		fs.appendFileSync(f, '\nint kwb_test_var=0;   \n');
-		git('commit', '-q', '-a', '-m', 'drm/virtio: add a test variable');
-		fs.appendFileSync(f, '\nstatic int kwb_test_fn(void)\n{\n\treturn 0;\n}\n');
-		git(
-			'commit',
-			'-q',
-			'-a',
-			'-s',
-			'-m',
-			'drm/virtio: add a test function',
-			'-m',
-			'A short description of the change.',
-		);
+		seriesBranch();
 		await set('patches.base', 'kwb-base');
 	});
 
@@ -68,6 +43,7 @@ describe('Series in VS Code', function () {
 			'drm/virtio: add a test variable — 1/2',
 			'drm/virtio: add a test function — 2/2',
 		]);
+		await x.series.view.refresh();
 		assert.strictEqual(x.series.view.view?.description, 'kwb-series · v1');
 	});
 

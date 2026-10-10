@@ -159,3 +159,38 @@ export function busyboxInitramfs(): string {
 	);
 	return cpio;
 }
+
+/**
+ * A two-patch series on the branch kwb-series over kwb-base (the clone's original HEAD):
+ * the first commit with style errors, the second clean. Made afresh each time, so that the
+ * test files, which run in any order, all see the same series.
+ */
+export function seriesBranch(): void {
+	const git = seriesBranch.git;
+	const branches = git('branch', '--list', 'kwb-base');
+	if (!branches.trim()) {
+		git('branch', 'kwb-base', 'HEAD');
+	}
+	git('checkout', '-q', '-B', 'kwb-series', 'kwb-base');
+	const f = path.join(tree(), 'drivers/gpu/drm/virtio/virtgpu_drv.c');
+	fs.appendFileSync(f, '\nint kwb_test_var=0;   \n');
+	git('commit', '-q', '-a', '-m', 'drm/virtio: add a test variable');
+	fs.appendFileSync(f, '\nstatic int kwb_test_fn(void)\n{\n\treturn 0;\n}\n');
+	git(
+		'commit',
+		'-q',
+		'-a',
+		'-s',
+		'-m',
+		'drm/virtio: add a test function',
+		'-m',
+		'A short description of the change.',
+	);
+}
+
+/** git in the clone, as the test identity. */
+seriesBranch.git = (...args: string[]) =>
+	execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], {
+		cwd: tree(),
+		encoding: 'utf8',
+	});
