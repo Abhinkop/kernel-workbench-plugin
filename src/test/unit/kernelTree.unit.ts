@@ -6,7 +6,10 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {
-	getKernelVersion, isKernelTree, isLinuxKernelRepo, LINUX_ROOT_COMMIT,
+	getKernelVersion,
+	isKernelTree,
+	isLinuxKernelRepo,
+	LINUX_ROOT_COMMIT,
 } from '../../kernelTree';
 // The module object itself, not an `import * as` copy, so that mocking execSync on it
 // replaces the execSync that kernelTree calls.
@@ -58,23 +61,23 @@ test('an empty SUBLEVEL is left out of the version', () => {
 	assert.equal(getKernelVersion(folderWith({ Makefile: makefile })), '2.6');
 });
 
-test('a Linux repo with a kernel Makefile is a kernel tree', (t) => {
+test('a Linux repo with a kernel Makefile is a kernel tree', t => {
 	inLinuxRepo(t);
 	assert.equal(isKernelTree(folderWith({ Makefile: KERNEL_MAKEFILE })), true);
 });
 
-test('a kernel Makefile outside a Linux repo is not a kernel tree', (t) => {
+test('a kernel Makefile outside a Linux repo is not a kernel tree', t => {
 	// For example, source unpacked from a kernel.org tarball.
 	notInLinuxRepo(t);
 	assert.equal(isKernelTree(folderWith({ Makefile: KERNEL_MAKEFILE })), false);
 });
 
-test('a Linux repo without a kernel Makefile is not a kernel tree', (t) => {
+test('a Linux repo without a kernel Makefile is not a kernel tree', t => {
 	inLinuxRepo(t);
 	assert.equal(isKernelTree(folderWith({ Makefile: 'all:\n' })), false);
 });
 
-test('Kbuild and Kconfig without a kernel Makefile are not enough', (t) => {
+test('Kbuild and Kconfig without a kernel Makefile are not enough', t => {
 	inLinuxRepo(t);
 	// VS Code activates the extension on Kbuild alone (workspaceContains:Kbuild),
 	// so this check is what keeps such folders from being treated as kernel trees.
@@ -121,27 +124,29 @@ test('a folder that does not exist is not a kernel tree', () => {
 	assert.equal(isKernelTree(dir), false);
 });
 
-test('isLinuxKernelRepo asks git, in dir, for the type of the Linux root commit', (t) => {
+test('isLinuxKernelRepo asks git, in dir, for the type of the Linux root commit', t => {
 	const execSync = t.mock.method(childProcess, 'execSync', () => Buffer.from('commit\n'));
 	isLinuxKernelRepo('/src/linux');
 	assert.equal(execSync.mock.callCount(), 1);
-	const [command, options] = execSync.mock.calls[0].arguments as
-		[string, childProcess.ExecSyncOptions];
+	const [command, options] = execSync.mock.calls[0].arguments as [
+		string,
+		childProcess.ExecSyncOptions,
+	];
 	assert.equal(command, `git cat-file -t ${LINUX_ROOT_COMMIT}`);
 	assert.equal(options.cwd, '/src/linux');
 });
 
-test('a repo containing the Linux root commit is a Linux repo', (t) => {
+test('a repo containing the Linux root commit is a Linux repo', t => {
 	inLinuxRepo(t);
 	assert.equal(isLinuxKernelRepo('/src/linux'), true);
 });
 
-test('an object of another type under that hash is not a Linux repo', (t) => {
+test('an object of another type under that hash is not a Linux repo', t => {
 	t.mock.method(childProcess, 'execSync', () => Buffer.from('blob\n'));
 	assert.equal(isLinuxKernelRepo('/src/linux'), false);
 });
 
-test('a folder where git fails is not a Linux repo', (t) => {
+test('a folder where git fails is not a Linux repo', t => {
 	// Not a git repo, no root commit, no such folder, or git not installed.
 	notInLinuxRepo(t);
 	assert.equal(isLinuxKernelRepo('/src/linux'), false);
