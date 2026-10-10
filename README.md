@@ -21,10 +21,14 @@ Configure, build, run and debug the Linux kernel from VS Code.
 
 ## Development
 
-| Task          | Command             |
-| ------------- | ------------------- |
-| Build         | `npm run compile`   |
-| Unit tests    | `npm run test:unit` |
-| VS Code tests | `npm test`          |
-| Lint          | `npm run lint`      |
-| Format        | `npm run format`    |
+| Task              | Command                                               |
+| ----------------- | ----------------------------------------------------- |
+| Build             | `npm run compile`                                     |
+| Unit tests        | `npm run test:unit`                                   |
+| VS Code tests     | `npm test`                                            |
+| Integration tests | `KERNEL_TREE=/path/to/linux npm run test:integration` |
+| Lint              | `npm run lint`                                        |
+| Format            | `npm run format`                                      |
+
+The integration tests run against a real kernel clone and need `git` and `make`. `KERNEL_TREE`
+must be a full clone (not `--depth 1`). CI clones mainline Linux for them.

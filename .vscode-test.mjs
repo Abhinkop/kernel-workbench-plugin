@@ -6,6 +6,9 @@ const mocha = { timeout: 20000 };
 
 const fixture = name => fileURLToPath(new URL(`./test-fixtures/${name}`, import.meta.url));
 
+// A real kernel clone, for the integration tests (npm run test:integration).
+const kernelTree = process.env.KERNEL_TREE;
+
 export default defineConfig([
 	{
 		label: 'kernel-tree',
@@ -19,4 +22,14 @@ export default defineConfig([
 		workspaceFolder: fixture('plain-folder'),
 		mocha,
 	},
+	...(kernelTree
+		? [
+				{
+					label: 'mainline-kernel',
+					files: 'out/test/activation/kernelTree.test.js',
+					workspaceFolder: kernelTree,
+					mocha,
+				},
+			]
+		: []),
 ]);

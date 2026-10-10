@@ -45,7 +45,9 @@
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"test": "vscode-test",
-		"test:unit": "npm run compile && node --test out/test/unit/kernelTree.unit.js"
+		"package": "vsce package",
+		"test:unit": "npm run compile && node --test out/test/unit/kernelTree.unit.js",
+		"test:integration": "npm run compile && node --test out/test/integration/kernelTree.integration.js && vscode-test --label mainline-kernel"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
@@ -53,6 +55,7 @@
 		"@types/vscode": "^1.140.0",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.0.0",
+		"@vscode/vsce": "^4.0.0",
 		"eslint": "^10.5.0",
 		"prettier": "3.9.9",
 		"typescript": "^6.0.3",

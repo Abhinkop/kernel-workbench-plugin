@@ -1,4 +1,5 @@
-// Runs inside VS Code with test-fixtures/kernel-tree open (see .vscode-test.mjs).
+// Runs inside VS Code with test-fixtures/kernel-tree, or the real kernel clone in KERNEL_TREE,
+// open (see .vscode-test.mjs).
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 

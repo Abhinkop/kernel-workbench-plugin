@@ -13,3 +13,4 @@ test-fixtures/**
 .prettierignore
 **/.prettierrc*
 out/test/**
+.github/**

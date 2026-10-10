@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      # VS Code needs a display; xvfb-run provides a virtual one.
+      - name: Activation tests
+        run: xvfb-run -a npm test
+
+      - name: Package
+        run: npm run package
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vsix
+          path: '*.vsix'
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # A treeless clone has every commit, including the mainline root commit, but downloads
+      # only the files of the checked-out version.
+      - name: Clone mainline Linux
+        run: git clone --filter=tree:0 https://github.com/torvalds/linux.git "$RUNNER_TEMP/linux"
+
+      - name: Integration tests
+        run: xvfb-run -a npm run test:integration
+        env:
+          KERNEL_TREE: ${{ runner.temp }}/linux
