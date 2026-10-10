@@ -86,6 +86,7 @@ describe('Kernel Workbench, clicked through', function () {
 		assert.match(await description('Build'), /^\w+ (Debug|Release) \(not configured yet\)$/);
 		assert.ok((await description('Base config')).length > 0, 'a base config');
 		assert.strictEqual(await description('Configured'), 'not yet');
+		assert.match(await description('Tools'), /^(all installed|missing \d+)$/);
 	});
 
 	it('right-clicking a target row offers only "Change…"', async () => {
@@ -143,7 +144,14 @@ describe('Kernel Workbench, clicked through', function () {
 		if (!(await more.isExpanded())) {
 			await more.expand();
 		}
-		for (const label of ['menuconfig', 'nconfig', 'Clean', 'Rebuild', 'Full clean']) {
+		for (const label of [
+			'menuconfig',
+			'nconfig',
+			'Clean',
+			'Rebuild',
+			'Full clean',
+			'Check tools',
+		]) {
 			assert.ok(await row(label), label);
 		}
 		assert.strictEqual(await description('Clean'), 'make clean');
