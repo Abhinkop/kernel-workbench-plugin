@@ -42,11 +42,16 @@ Configure, build, run and debug the Linux kernel from VS Code.
 | Unit tests        | `npm run test:unit`            |
 | VS Code tests     | `npm test`                     |
 | Integration tests | Task **npm: test:integration** |
+| UI tests          | Task **npm: test:ui**          |
 | Lint              | `npm run lint`                 |
 | Format            | `npm run format`               |
 | Set kernel tree   | Task **Configure kernel tree** |
 
-The integration tests and the **Run Extension** launch configuration both use the kernel tree
-set in `kernelWorkbench.dev.kernelTree` in `.vscode/settings.json`. Set it with the
-**Configure kernel tree** task. It must be a full clone (not
-`--depth 1`). The integration tests also need `git` and `make`. CI clones mainline Linux for them.
+The integration tests, the UI tests and the **Run Extension** launch configuration all use the
+kernel tree set in `kernelWorkbench.dev.kernelTree` in `.vscode/settings.json`. Set it with the
+**Configure kernel tree** task. It must be a full clone (not `--depth 1`). The integration
+tests also need `git` and `make`. The UI tests click through a real VS Code window with
+[vscode-extension-tester](https://github.com/redhat-developer/vscode-extension-tester), on a
+throwaway clone of the tree; the first run downloads VS Code and ChromeDriver into
+`kernel-workbench-extest` under the temporary directory (the folder has to be short: VS
+Code's IPC socket path is limited to 107 bytes). CI clones mainline Linux for both.
