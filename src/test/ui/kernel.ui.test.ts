@@ -11,6 +11,7 @@ import {
 	InputBox,
 	Key,
 	MarkerType,
+	SideBarView,
 	TextEditor,
 	VSBrowser,
 	WebDriver,
@@ -240,6 +241,34 @@ describe('Kernel Workbench, clicked through', function () {
 			rows.join(' | '),
 		);
 		await (await new ActivityBar().getViewControl('Explorer'))?.openView();
+	});
+
+	it('shows the branch’s series in the Kernel Git tab', async () => {
+		const control = await until(
+			() => new ActivityBar().getViewControl('Kernel Git'),
+			10000,
+			'the Kernel Git view control',
+		);
+		// With a single view in the container, the sidebar is titled after the view, which
+		// openView() does not expect: open it with a click and take its first section.
+		await control.click();
+		const rows = await until(
+			async () => {
+				const sections = await new SideBarView().getContent().getSections();
+				const titles = await Promise.all(sections.map(s => s.getTitle()));
+				const section = (sections[titles.indexOf('Series')] ??
+					sections[0]) as CustomTreeSection;
+				const items = await section.getVisibleItems();
+				const texts = await Promise.all(items.map(i => i.getLabel()));
+				return texts.includes('Commits') ? texts : undefined;
+			},
+			60000,
+			'the Series view',
+		);
+		for (const label of ['Actions', 'Base', 'Version', 'Commits', 'Working changes']) {
+			assert.ok(rows.includes(label), `"${label}" in ${rows.join(' | ')}`);
+		}
+		await (await new ActivityBar().getViewControl('Explorer'))?.click();
 	});
 
 	describe('editor', () => {
