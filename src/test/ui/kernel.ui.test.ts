@@ -105,6 +105,7 @@ describe('Kernel Workbench, clicked through', function () {
 			'Steps',
 			'Configure',
 			'Run',
+			'Debug',
 			'Target',
 			'Architecture',
 			'Build',
@@ -118,6 +119,7 @@ describe('Kernel Workbench, clicked through', function () {
 		assert.match(await description('Build'), /^\w+ (Debug|Release) \(not configured yet\)$/);
 		assert.ok((await description('Base config')).length > 0, 'a base config');
 		assert.match(await description('Run'), /^\w+ (Debug|Release) in QEMU$/);
+		assert.match(await description('Debug'), /^\w+ (Debug|Release) in QEMU \+ gdb$/);
 		assert.strictEqual(await description('Configured'), 'not yet');
 		assert.strictEqual(await description('VM'), 'stopped');
 		assert.match(await description('Tools'), /^(all installed|missing \d+)$/);
@@ -202,7 +204,7 @@ describe('Kernel Workbench, clicked through', function () {
 			);
 		});
 
-		it('has the Kernel Workbench menu, Configure, Build and Run on the toolbar', async () => {
+		it('has the Kernel Workbench menu and the steps on the toolbar', async () => {
 			const titles = await until(
 				async () => {
 					const actions = await new EditorView().getActions();
@@ -212,7 +214,14 @@ describe('Kernel Workbench, clicked through', function () {
 				10000,
 				'the editor toolbar',
 			);
-			for (const title of ['Kernel Workbench', 'Configure', 'Build', 'Run in QEMU']) {
+			const expected = [
+				'Kernel Workbench',
+				'Configure',
+				'Build',
+				'Run in QEMU',
+				'Debug in QEMU',
+			];
+			for (const title of expected) {
 				assert.ok(
 					titles.some(t => t === title || t.startsWith(`${title} (`)),
 					`"${title}" in ${titles.join(' | ')}`,
@@ -223,9 +232,11 @@ describe('Kernel Workbench, clicked through', function () {
 		it('right-click offers the Kernel Workbench menu, not the steps', async () => {
 			const editor = new TextEditor();
 			const driver = editor.getDriver();
-			// On the text itself: the minimap and the scrollbar have menus of their own.
-			const lines = await editor.findElement(By.className('view-lines'));
-			await driver.actions().contextClick(lines).perform();
+			// From the keyboard, at the cursor: a pointer position may land on the minimap or
+			// the scrollbar, which have menus of their own.
+			// The input: a native edit context in recent VS Code, a textarea before.
+			const input = await editor.findElement(By.css('.native-edit-context, .inputarea'));
+			await input.sendKeys(Key.chord(Key.SHIFT, Key.F10));
 			const labels = await until(
 				() => contextMenuLabels(driver),
 				10000,
