@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { followSelection } from './clangd';
 import { Kbuild } from './kbuild';
 import { isKernelTree } from './kernelTree';
 import { KernelView, registerKernelView } from './kernelView';
@@ -44,10 +45,19 @@ function registerCommands(
 	kbuild: Kbuild,
 	checkTools: (always: boolean) => Promise<void>,
 ): void {
+	// Switching arch or variant points clangd at that build, if it exists.
+	const reselect = (pick: () => Promise<void>) => async () => {
+		await pick();
+		await followSelection(settings.root, settings.configured());
+	};
 	const commands: [string, (...args: any[]) => any][] = [
-		['kernelWorkbench.selectArch', () => pickArch(settings)],
-		['kernelWorkbench.selectVariant', () => pickVariant(settings)],
+		['kernelWorkbench.selectArch', reselect(() => pickArch(settings))],
+		['kernelWorkbench.selectVariant', reselect(() => pickVariant(settings))],
 		['kernelWorkbench.selectConfig', () => pickConfig(settings)],
+		[
+			'kernelWorkbench.followSelection',
+			() => followSelection(settings.root, settings.configured()),
+		],
 		['kernelWorkbench.configure', () => kbuild.configure()],
 		['kernelWorkbench.build', () => kbuild.build()],
 		[

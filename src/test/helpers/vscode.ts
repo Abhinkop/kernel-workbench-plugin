@@ -156,6 +156,8 @@ export const state = {
 	runTasks: true as boolean | number,
 	/** What was last copied with env.clipboard. */
 	clipboard: '',
+	/** Installed extensions, by id, for extensions.getExtension. */
+	extensions: {} as Record<string, unknown>,
 };
 
 function ask(
@@ -339,6 +341,10 @@ export const vscode = {
 		},
 	},
 
+	extensions: {
+		getExtension: (id: string) => state.extensions[id],
+	},
+
 	env: {
 		clipboard: {
 			readText: async () => state.clipboard,
@@ -373,6 +379,7 @@ export function reset(): void {
 	state.tasks = [];
 	state.runTasks = true;
 	state.clipboard = '';
+	state.extensions = {};
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
 	for (const emitter of [

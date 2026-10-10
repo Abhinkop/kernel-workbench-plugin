@@ -107,6 +107,11 @@
 				"title": "Install Missing Tools",
 				"category": "Kernel",
 				"icon": "$(cloud-download)"
+			},
+			{
+				"command": "kernelWorkbench.followSelection",
+				"title": "Point clangd at the Selected Build",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -265,6 +270,10 @@
 				},
 				{
 					"command": "kernelWorkbench.installTools",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.followSelection",
 					"when": "kernelWorkbench.active"
 				}
 			],
@@ -444,6 +453,12 @@
 						"type": "string",
 						"default": "build/${arch}/${variant}",
 						"markdownDescription": "Build output (`O=`), relative to the kernel tree or absolute. `${arch}` and `${variant}` are substituted.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.clangd.updateCompileCommands": {
+						"type": "boolean",
+						"default": true,
+						"markdownDescription": "After each build, write the build's `compile_commands.json` to the root of the tree for clangd (gcc-only flags stripped) and restart clangd.",
 						"scope": "resource"
 					},
 					"kernelWorkbench.terminal.afterTask": {

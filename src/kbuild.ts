@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { archInfo } from './arch';
+import { updateCompileCommands } from './clangd';
 import type { Configured, Settings } from './settings';
 import { runTask, sq } from './tasks';
 import { buildRequirements, describe, installCommand } from './tools';
@@ -100,7 +101,8 @@ export class Kbuild {
 
 	/**
 	 * Build with the arguments recorded by Configure (configuring first if needed), with
-	 * the compiler's errors and warnings in the Problems panel.
+	 * the compiler's errors and warnings in the Problems panel, then refresh
+	 * compile_commands.json for clangd.
 	 */
 	async build(): Promise<number> {
 		let state = this.settings.configured();
@@ -119,17 +121,20 @@ export class Kbuild {
 		const script = [
 			'set -e',
 			this.make(this.settings.makeArgs(state)),
+			this.make(this.settings.makeArgs(state), 'compile_commands.json'),
 			`echo "==> ${state.arch} ${state.variant} built"`,
 		].join('\n');
-		return runTask(
+		const code = await runTask(
 			this.folder,
 			`Build ${state.arch} ${state.variant}`,
 			'bash',
 			['-c', script],
-			{
-				problemMatcher: ['$gcc'],
-			},
+			{ problemMatcher: ['$gcc'] },
 		);
+		if (code === 0) {
+			await updateCompileCommands(this.root, state);
+		}
+		return code;
 	}
 
 	/** make clean on the configured build; nothing to do before Configure. */

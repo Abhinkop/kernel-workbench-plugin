@@ -114,11 +114,18 @@ describe('kbuild', () => {
 		const builds = log()
 			.split('\n')
 			.filter(l => /^make /.test(l) && !/defconfig/.test(l));
-		assert.equal(builds.length, 1, log());
-		assert.match(builds[0], / W=1 /, 'the extra arguments as set now');
-		assert.doesNotMatch(builds[0], /KCFLAGS/);
-		assert.match(builds[0], /CROSS_COMPILE=/, 'the toolchain the .config was made with');
-		assert.doesNotMatch(builds[0], /LLVM=1/);
+		assert.equal(builds.length, 2, log());
+		assert.match(builds[1], / compile_commands\.json$/, 'the database for clangd');
+		assert.ok(
+			builds.every(l => / W=1 /.test(l)),
+			'the extra arguments as set now',
+		);
+		assert.ok(builds.every(l => !/KCFLAGS/.test(l)));
+		assert.ok(
+			builds.every(l => /CROSS_COMPILE=/.test(l)),
+			'the toolchain the .config was made with',
+		);
+		assert.ok(builds.every(l => !/LLVM=1/.test(l)));
 		assert.deepEqual(settings.makeArgs(settings.configured()!).slice(-1), ['W=1']);
 	});
 
@@ -130,7 +137,10 @@ describe('kbuild', () => {
 			.split('\n')
 			.filter(l => /^make /.test(l));
 		assert.match(makes[0], /defconfig/);
-		assert.match(makes[makes.length - 1], /-j\d+$/, 'then the build');
+		assert.ok(
+			makes.slice(1).some(l => /-j\d+$/.test(l)),
+			'then the build',
+		);
 		assert.ok(settings.configured());
 	});
 

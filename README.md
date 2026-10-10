@@ -59,6 +59,13 @@ Configure, build, run and debug the Linux kernel from VS Code.
   command in a terminal; a warning offers the same once per set of missing tools, until
   **Don't Show Again**. **Kernel: Check Required Tools** (also under More) checks on demand.
   Configure and Build refuse to start without the tools, naming them.
+- clangd set up without any files of yours: after each Build, the build's
+  `compile_commands.json` is written to the root of the tree, where clangd looks (gcc-only
+  flags stripped and `--target` made explicit for GCC builds; LLVM builds copied as they
+  are), and clangd is restarted if its extension is installed. Switching the architecture
+  or Debug/Release points clangd at that build if it exists; **Kernel: Point clangd at the
+  Selected Build** does so on demand. `kernelWorkbench.clangd.updateCompileCommands` turns
+  this off.
 
 ## Requirements
 

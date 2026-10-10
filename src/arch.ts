@@ -11,6 +11,8 @@ export interface ArchInfo {
 	image: string;
 	/** default CROSS_COMPILE for GCC builds when cross compiling */
 	gccPrefix: string;
+	/** --target= triple clangd needs for GCC compile databases */
+	clangTarget: string;
 	/** `uname -m` value of a host that can run this natively */
 	hostUname: string;
 }
@@ -20,18 +22,21 @@ const ARCHES: Record<string, ArchInfo> = {
 		kernelArch: 'x86_64',
 		image: 'arch/x86/boot/bzImage',
 		gccPrefix: 'x86_64-linux-gnu-',
+		clangTarget: 'x86_64-linux-gnu',
 		hostUname: 'x86_64',
 	},
 	arm64: {
 		kernelArch: 'arm64',
 		image: 'arch/arm64/boot/Image',
 		gccPrefix: 'aarch64-linux-gnu-',
+		clangTarget: 'aarch64-linux-gnu',
 		hostUname: 'aarch64',
 	},
 	riscv64: {
 		kernelArch: 'riscv',
 		image: 'arch/riscv/boot/Image',
 		gccPrefix: 'riscv64-linux-gnu-',
+		clangTarget: 'riscv64-linux-gnu',
 		hostUname: 'riscv64',
 	},
 };
