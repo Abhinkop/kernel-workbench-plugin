@@ -399,6 +399,40 @@ describe('Kernel Workbench, clicked through', function () {
 			await (await new ActivityBar().getViewControl('Explorer'))?.openView();
 		});
 
+		it('shows the cursor line’s last change in the Blame view', async () => {
+			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
+			const control = await until(
+				() => new ActivityBar().getViewControl('History'),
+				10000,
+				'the History view control',
+			);
+			const view = await control.openView();
+			const rows = await until(
+				async () => {
+					const section = (await view
+						.getContent()
+						.getSection('Blame')) as CustomTreeSection;
+					await section.expand();
+					const items = await section.getVisibleItems();
+					const labels = await Promise.all(items.map(i => i.getLabel()));
+					return labels.length >= 3 &&
+						!labels.some(l => l.startsWith('Running git blame'))
+						? labels
+						: undefined;
+				},
+				60000,
+				'the Blame view to follow the cursor',
+			);
+			// The line's text, the commit that last changed it, and the chain before it.
+			assert.ok(rows[0].trim() && rows[1].trim(), rows.join(' | '));
+			assert.match(
+				rows[2],
+				/^(No earlier changes: |Earlier changes to this line \()/,
+				rows.join(' | '),
+			);
+			await (await new ActivityBar().getViewControl('Explorer'))?.openView();
+		});
+
 		after(async () => {
 			await new EditorView().closeAllEditors();
 		});
