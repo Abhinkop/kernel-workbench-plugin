@@ -138,6 +138,18 @@ describe('Kernel Workbench, clicked through', function () {
 		assert.match(await description('Build'), /^\w+ (Debug|Release)$/, 'Build no longer warns');
 	});
 
+	it('offers the other actions under More', async () => {
+		const more = await row('More');
+		if (!(await more.isExpanded())) {
+			await more.expand();
+		}
+		for (const label of ['menuconfig', 'nconfig', 'Clean', 'Rebuild', 'Full clean']) {
+			assert.ok(await row(label), label);
+		}
+		assert.strictEqual(await description('Clean'), 'make clean');
+		await more.collapse();
+	});
+
 	describe('editor', () => {
 		before(async () => {
 			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
