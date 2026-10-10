@@ -68,5 +68,9 @@ describe('Build in VS Code', function () {
 		await until(() => !terminals().some(t => /Build/.test(t)), 5000);
 		const built = (await status()).find(l => l.startsWith('Built — '));
 		assert.ok(built?.startsWith(`Built — ${path.basename(image)}, `), built);
+		const published = path.join(recorded.buildDir, '..', '..', '..', 'compile_commands.json');
+		const db = JSON.parse(fs.readFileSync(published, 'utf8'));
+		assert.ok(db.length > 1000, `${db.length} entries for clangd`);
+		assert.match(db[0].command, /--target=x86_64-linux-gnu$/);
 	});
 });
