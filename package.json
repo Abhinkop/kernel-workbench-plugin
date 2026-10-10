@@ -354,6 +354,17 @@
 				"title": "Reveal Patches Folder",
 				"category": "Kernel",
 				"icon": "$(folder-opened)"
+			},
+			{
+				"command": "kernelWorkbench.series.dryRun",
+				"title": "Send Patches: Dry Run",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.series.send",
+				"title": "Send Patches…",
+				"category": "Kernel",
+				"icon": "$(send)"
 			}
 		],
 		"submenus": [
@@ -642,6 +653,21 @@
 					"command": "kernelWorkbench.series.editPrefix",
 					"when": "view == kernelWorkbench.series",
 					"group": "2_series@4"
+				},
+				{
+					"command": "kernelWorkbench.series.send",
+					"when": "view == kernelWorkbench.series && kernelWorkbench.dryRunOk",
+					"group": "navigation@3"
+				},
+				{
+					"command": "kernelWorkbench.series.dryRun",
+					"when": "view == kernelWorkbench.series && kernelWorkbench.patchesGenerated",
+					"group": "3_send@1"
+				},
+				{
+					"command": "kernelWorkbench.series.send",
+					"when": "view == kernelWorkbench.series && kernelWorkbench.patchesGenerated",
+					"group": "3_send@2"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -929,6 +955,14 @@
 				{
 					"command": "kernelWorkbench.series.revealOutput",
 					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.series.dryRun",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.send",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [

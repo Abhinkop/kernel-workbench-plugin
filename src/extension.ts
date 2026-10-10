@@ -14,6 +14,7 @@ import { registerOops } from './oops';
 import type { OopsWatcher } from './oops';
 import type { Patches } from './patches';
 import { Runner } from './runner';
+import type { Sender } from './send';
 import { registerSeries } from './series';
 import type { Series, SeriesTree } from './series';
 import { Settings } from './settings';
@@ -34,8 +35,8 @@ export interface KernelWorkbench {
 	history: FileHistory;
 	/** The blame annotations and the Blame view. */
 	blame: { annotations: BlameAnnotations; blameView: BlameView };
-	/** The Series view: the branch's commits over its base, their checks and patches. */
-	series: { series: Series; patches: Patches; view: SeriesTree };
+	/** The Series view: the branch's commits over its base, their checks, patches and sending. */
+	series: { series: Series; patches: Patches; sender: Sender; view: SeriesTree };
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;

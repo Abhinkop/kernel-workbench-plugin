@@ -8,6 +8,7 @@ import { exists, git, gitStatus, log } from './git';
 import type { Commit } from './git';
 import type { OptionSpec } from './options';
 import { Patches } from './patches';
+import { Sender } from './send';
 import type { Settings } from './settings';
 import { runTask, sq } from './tasks';
 import { onPath } from './tools';
@@ -500,6 +501,7 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 	constructor(
 		readonly series: Series,
 		readonly patches: Patches,
+		readonly sender: Sender,
 	) {
 		series.onDidChange(() => this.refresh());
 		series.settings.onDidChange(() => this.refresh());
@@ -508,6 +510,14 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 	async refresh(): Promise<void> {
 		const se = this.series;
 		this.cover = await this.patches.cover();
+		if (!this.sender.smtp) {
+			await this.sender.checkConfig();
+		}
+		vscode.commands.executeCommand(
+			'setContext',
+			'kernelWorkbench.dryRunOk',
+			this.sender.dryRunCurrent(),
+		);
 		vscode.commands.executeCommand(
 			'setContext',
 			'kernelWorkbench.patchesGenerated',
@@ -585,7 +595,7 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 	actions(): SeriesItem[] {
 		const n = this.series.info.commits.length;
 		const commits = n ? ` on ${n} commit${n > 1 ? 's' : ''}` : '';
-		return [
+		const items = [
 			action(
 				'Check series',
 				'kernelWorkbench.series.check',
@@ -611,6 +621,20 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 				'git format-patch',
 			),
 		];
+		if (this.patches.output) {
+			items.push(
+				action(
+					'Dry run',
+					'kernelWorkbench.series.dryRun',
+					'debug-alt',
+					'git send-email --dry-run',
+				),
+			);
+		}
+		if (this.sender.dryRunCurrent()) {
+			items.push(action('Send…', 'kernelWorkbench.series.send', 'send', 'git send-email'));
+		}
+		return items;
 	}
 
 	/** Groups after Check options. */
@@ -678,6 +702,23 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 								},
 							}),
 					),
+				}),
+			);
+		}
+		if (pa.output) {
+			const dry = this.sender.dry;
+			const current = this.sender.dryRunCurrent();
+			children.push(
+				new SeriesItem('Dry run', {
+					description: !dry
+						? 'not run'
+						: !dry.ok
+							? 'failed'
+							: current
+								? `OK, ${dry.mails.length} mails`
+								: 'outdated: the files changed',
+					icon: dry?.ok && current ? 'pass' : dry ? 'warning' : 'circle-large-outline',
+					tooltip: `SMTP: ${this.sender.smtp}`,
 				}),
 			);
 		}
@@ -774,10 +815,11 @@ function md(s: string): string {
 export function registerSeries(
 	context: vscode.ExtensionContext,
 	settings: Settings,
-): { series: Series; patches: Patches; view: SeriesTree } {
+): { series: Series; patches: Patches; sender: Sender; view: SeriesTree } {
 	const series = new Series(context, settings);
 	const patches = new Patches(series);
-	const tree = new SeriesTree(series, patches);
+	const sender = new Sender(patches);
+	const tree = new SeriesTree(series, patches, sender);
 	const view = vscode.window.createTreeView('kernelWorkbench.series', {
 		treeDataProvider: tree,
 	});
@@ -798,6 +840,11 @@ export function registerSeries(
 			() => series.withBusy('get_maintainer.pl', () => patches.fillRecipients()),
 		],
 		['kernelWorkbench.series.generate', () => patches.generate()],
+		[
+			'kernelWorkbench.series.dryRun',
+			() => series.withBusy('git send-email --dry-run', () => sender.dryRun()),
+		],
+		['kernelWorkbench.series.send', () => sender.send()],
 		[
 			'kernelWorkbench.series.revealOutput',
 			() =>
@@ -821,5 +868,5 @@ export function registerSeries(
 		view.onDidChangeVisibility(() => view.visible && series.refresh()),
 	);
 	series.refresh();
-	return { series, patches, view: tree };
+	return { series, patches, sender, view: tree };
 }

@@ -155,6 +155,10 @@ Configure, build, run and debug the Linux kernel from VS Code.
   and **Edit Recipients** opens them in a tab. If checkpatch reports errors, they are listed
   and the patches are only generated on _Generate Anyway_; the generated files are listed
   under the Patches group and open on a click.
+- **Send Patches: Dry Run** (`git send-email --dry-run`) lists every mail and its recipients
+  in a tab, with the SMTP setup from `git config` (`sendemail.smtpServer` and so on, which
+  you configure yourself); **Send Patches…** is offered only after a successful dry run of
+  exactly these files, asks once, and sends in a terminal (SMTP may ask for a password).
 
 ## Requirements
 
