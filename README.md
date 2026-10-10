@@ -176,6 +176,12 @@ Configure, build, run and debug the Linux kernel from VS Code.
   skips the commit) and then the script, which gets the build directory and answers good
   (0) or bad (1). The first bad commit is shown, opens in a tab, and has **Copy Fixes:
   Line**.
+- **DT Check: Changed Files** (arm64 and riscv64; the Kernel Workbench menu, the palette)
+  checks the boards a change affects (`CHECK_DTBS=y`; a changed `.dtsi` selects every board
+  that includes it) and lints and checks the changed binding schemas, and **DT Check: All
+  dtbs** runs a full `make dtbs_check`; Check Series runs them when the series touches
+  devicetree files. The findings go to Problems at the node's line. This needs `dtschema`
+  (`pip install dtschema`) and `yamllint`.
 
 ## Requirements
 

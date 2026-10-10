@@ -6,6 +6,8 @@ import type { Bisect, BisectTree } from './bisect';
 import { registerBlame } from './blame';
 import type { BlameAnnotations, BlameView } from './blame';
 import { followSelection } from './clangd';
+import { registerDt } from './dt';
+import type { DtChecks } from './dt';
 import { GitDocuments, SCHEME as GIT_SCHEME } from './commits';
 import { registerHistory } from './history';
 import type { FileHistory } from './history';
@@ -45,6 +47,8 @@ export interface KernelWorkbench {
 	apply: { apply: Apply; view: ApplyTree };
 	/** The Bisect view: git bisect, by hand or with a test script. */
 	bisect: { bisect: Bisect; view: BisectTree };
+	/** The devicetree checks. */
+	dt: DtChecks;
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -77,6 +81,8 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 	const series = registerSeries(context, settings);
 	const apply = registerApply(context, settings);
 	const bisect = registerBisect(context, settings);
+	const dt = registerDt(context, settings);
+	series.series.dt = dt;
 	syncContextKeys(context, runner);
 	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
@@ -92,6 +98,7 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 		series,
 		apply,
 		bisect,
+		dt,
 		kernelView,
 		checkTools,
 	};

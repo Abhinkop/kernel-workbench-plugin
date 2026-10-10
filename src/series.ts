@@ -4,6 +4,7 @@ import * as os from 'os';
 import * as path from 'path';
 import * as checkpatch from './checkpatch';
 import type { Report } from './checkpatch';
+import type { DtChecks } from './dt';
 import { exists, git, gitStatus, log } from './git';
 import type { Commit } from './git';
 import type { OptionSpec } from './options';
@@ -44,6 +45,8 @@ export class Series {
 	/** What the last build checks found. */
 	lastBuild = '';
 	readonly problems: checkpatch.Problems;
+	/** The devicetree checks, once registered. */
+	dt: DtChecks | undefined;
 	private readonly _onDidChange = new vscode.EventEmitter<void>();
 	readonly onDidChange = this._onDidChange.event;
 
@@ -212,7 +215,19 @@ export class Series {
 	/** The build checks on what changed since the base. */
 	async buildChecks(mergeBase: string): Promise<void> {
 		const out = await git(this.root, ['diff', '--name-only', '--diff-filter=d', mergeBase]);
-		await this.compileChecks(out.split('\n').filter(Boolean));
+		const changed = out.split('\n').filter(Boolean);
+		await this.compileChecks(changed);
+		// Devicetree sources and bindings, when the series touches them.
+		const devicetree = (f: string) =>
+			/\.dtsi?$/.test(f) ||
+			(f.startsWith('Documentation/devicetree/bindings/') && f.endsWith('.yaml'));
+		if (this.dt && changed.some(devicetree)) {
+			this.busy = 'DT check';
+			this.changed();
+			this.lastBuild += ` · ${await this.dt.check(changed)}`;
+			this.busy = '';
+			this.changed();
+		}
 	}
 
 	/**

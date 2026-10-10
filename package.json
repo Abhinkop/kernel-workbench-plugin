@@ -31,7 +31,8 @@
 		"kunit",
 		"git",
 		"checkpatch",
-		"bisect"
+		"bisect",
+		"devicetree"
 	],
 	"main": "./out/extension.js",
 	"extensionKind": [
@@ -467,6 +468,16 @@
 				"title": "Copy Fixes: Line",
 				"category": "Kernel",
 				"icon": "$(copy)"
+			},
+			{
+				"command": "kernelWorkbench.dt.checkChanged",
+				"title": "DT Check: Changed Files",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.dt.checkAll",
+				"title": "DT Check: All dtbs (make dtbs_check)",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -917,6 +928,10 @@
 				{
 					"command": "kernelWorkbench.buildModules",
 					"group": "4_tools@4"
+				},
+				{
+					"command": "kernelWorkbench.dt.checkChanged",
+					"group": "4_tools@5"
 				}
 			],
 			"commandPalette": [
@@ -1223,6 +1238,14 @@
 				{
 					"command": "kernelWorkbench.bisect.copyFixes",
 					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.dt.checkChanged",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.dt.checkAll",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
