@@ -84,7 +84,13 @@ describe('options', () => {
 			'W=1',
 			'CC=ccache gcc',
 			'a b',
-			'x\\"y',
+			'x"y',
+		]);
+		// Quotes inside a word, the way make arguments are usually typed.
+		assert.deepEqual(splitArgs(`KCFLAGS="-Og -g" LLVM=1 'KAFLAGS=-Wa,-g'`), [
+			'KCFLAGS=-Og -g',
+			'LLVM=1',
+			'KAFLAGS=-Wa,-g',
 		]);
 		assert.equal(joinArgs(['W=1', 'CC=ccache gcc']), 'W=1 "CC=ccache gcc"');
 	});

@@ -34,7 +34,7 @@ describe('Options in VS Code', function () {
 		const before = cfg().get('make.ccache');
 		await vscode.commands.executeCommand('kernelWorkbench.editItem', ccache);
 		await until(() => cfg().get('make.ccache') === !before);
-		const input = answer('showInputBox', ['W=1 "KCFLAGS=-Og -g"']);
+		const input = answer('showInputBox', ['W=1 KCFLAGS="-Og -g"']);
 		try {
 			const makeArgs = await child(x.kernelView, 'Extra make arguments', options);
 			await vscode.commands.executeCommand('kernelWorkbench.editItem', makeArgs);

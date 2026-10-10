@@ -258,15 +258,45 @@ export async function editOption(settings: Settings, option: OptionSpec): Promis
 	}
 }
 
-/** Splits a command-line-like string, honouring '…' and "…". */
+/**
+ * Splits a command-line-like string the way a shell does: whitespace separates arguments,
+ * '…' and "…" keep theirs (also inside a word, as in KCFLAGS="-Og -g"), and a backslash
+ * escapes the next character.
+ */
 export function splitArgs(text: string): string[] {
 	const out: string[] = [];
-	const re = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g;
-	let m: RegExpExecArray | null;
-	while ((m = re.exec(text))) {
-		out.push(
-			m[1] !== undefined ? m[1].replace(/\\(.)/g, '$1') : m[2] !== undefined ? m[2] : m[3],
-		);
+	let current = '';
+	let inWord = false;
+	let quote: '"' | "'" | undefined;
+	for (let i = 0; i < text.length; i++) {
+		const c = text[i];
+		if (quote) {
+			if (c === quote) {
+				quote = undefined;
+			} else if (c === '\\' && quote === '"' && i + 1 < text.length) {
+				current += text[++i];
+			} else {
+				current += c;
+			}
+		} else if (c === '"' || c === "'") {
+			quote = c;
+			inWord = true;
+		} else if (c === '\\' && i + 1 < text.length) {
+			current += text[++i];
+			inWord = true;
+		} else if (/\s/.test(c)) {
+			if (inWord) {
+				out.push(current);
+				current = '';
+				inWord = false;
+			}
+		} else {
+			current += c;
+			inWord = true;
+		}
+	}
+	if (inWord) {
+		out.push(current);
 	}
 	return out;
 }
