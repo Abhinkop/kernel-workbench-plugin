@@ -259,6 +259,8 @@ describe('kbuild', () => {
 				E: '-1',
 				F: '"text"',
 				G: 'text',
+				H: 'abc',
+				I: '"18"',
 			}),
 			[
 				'-e',
@@ -279,6 +281,12 @@ describe('kbuild', () => {
 				'--set-str',
 				'G',
 				'text',
+				'--set-str',
+				'H',
+				'abc',
+				'--set-str',
+				'I',
+				'18',
 			],
 		);
 	});

@@ -328,7 +328,7 @@ export class Kbuild {
 
 /**
  * scripts/config arguments for options: name (without CONFIG_) -> "y", "n", "m", a number
- * or a string. A value that looks like a number is set as one, quoted or not.
+ * (decimal or 0x hex, unquoted) or a string, with its quotes, if any, removed.
  */
 export function scriptsConfigArgs(options: Record<string, string>): string[] {
 	const args: string[] = [];
@@ -339,7 +339,7 @@ export function scriptsConfigArgs(options: Record<string, string>): string[] {
 			args.push('-d', name);
 		} else if (value === 'm') {
 			args.push('-m', name);
-		} else if (/^-?(0x)?[0-9a-fA-F]+$/.test(value)) {
+		} else if (/^-?(0x[0-9a-fA-F]+|\d+)$/.test(value)) {
 			args.push('--set-val', name, value);
 		} else {
 			args.push('--set-str', name, value.replace(/^"|"$/g, ''));
