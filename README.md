@@ -1,4 +1,4 @@
-# Kernel Dev
+# Kernel Workbench
 
 Configure, build, run and debug the Linux kernel from VS Code.
 
@@ -11,7 +11,7 @@ Configure, build, run and debug the Linux kernel from VS Code.
 - Treats a workspace folder as a kernel tree when its top-level `Makefile` sets `VERSION` and
   `PATCHLEVEL` and its git history contains the first mainline Linux commit
   (`1da177e4c3f4`).
-- Sets the `kernelDev.active` context key in kernel trees.
+- Sets the `kernelWorkbench.active` context key in kernel trees.
 
 ## Requirements
 
@@ -21,14 +21,17 @@ Configure, build, run and debug the Linux kernel from VS Code.
 
 ## Development
 
-| Task              | Command                                               |
-| ----------------- | ----------------------------------------------------- |
-| Build             | `npm run compile`                                     |
-| Unit tests        | `npm run test:unit`                                   |
-| VS Code tests     | `npm test`                                            |
-| Integration tests | `KERNEL_TREE=/path/to/linux npm run test:integration` |
-| Lint              | `npm run lint`                                        |
-| Format            | `npm run format`                                      |
+| Task              | Command                        |
+| ----------------- | ------------------------------ |
+| Build             | `npm run compile`              |
+| Unit tests        | `npm run test:unit`            |
+| VS Code tests     | `npm test`                     |
+| Integration tests | Task **npm: test:integration** |
+| Lint              | `npm run lint`                 |
+| Format            | `npm run format`               |
+| Set kernel tree   | Task **Configure kernel tree** |
 
-The integration tests run against a real kernel clone and need `git` and `make`. `KERNEL_TREE`
-must be a full clone (not `--depth 1`). CI clones mainline Linux for them.
+The integration tests and the **Run Extension** launch configuration both use the kernel tree
+set in `kernelWorkbench.dev.kernelTree` in `.vscode/settings.json`. Set it with the
+**Configure kernel tree** task. It must be a full clone (not
+`--depth 1`). The integration tests also need `git` and `make`. CI clones mainline Linux for them.

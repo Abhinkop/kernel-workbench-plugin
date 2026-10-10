@@ -28,7 +28,7 @@ const KERNEL_MAKEFILE = [
 
 /** A new empty folder holding the given files, mapped from name to contents. */
 function folderWith(files: Record<string, string>): string {
-	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kernel-dev-test-'));
+	const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kernel-workbench-test-'));
 	for (const [name, contents] of Object.entries(files)) {
 		fs.writeFileSync(path.join(dir, name), contents);
 	}
@@ -119,7 +119,7 @@ test('a directory named Makefile is not a kernel tree', () => {
 });
 
 test('a folder that does not exist is not a kernel tree', () => {
-	const dir = path.join(os.tmpdir(), 'kernel-dev-test-does-not-exist');
+	const dir = path.join(os.tmpdir(), 'kernel-workbench-test-does-not-exist');
 	assert.equal(getKernelVersion(dir), undefined);
 	assert.equal(isKernelTree(dir), false);
 });

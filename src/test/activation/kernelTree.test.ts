@@ -1,12 +1,12 @@
-// Runs inside VS Code with test-fixtures/kernel-tree, or the real kernel clone in KERNEL_TREE,
-// open (see .vscode-test.mjs).
+// Runs inside VS Code with test-fixtures/kernel-tree open, and again with the real kernel clone
+// open in the integration tests (see .vscode-test.mjs).
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 
 suite('Opened on a kernel tree', () => {
 	test('the extension activates', async () => {
-		const ext = vscode.extensions.getExtension('ajose.kernel-dev');
-		assert.ok(ext, 'extension ajose.kernel-dev is not installed');
+		const ext = vscode.extensions.getExtension('ajose.kernel-workbench');
+		assert.ok(ext, 'extension ajose.kernel-workbench is not installed');
 		for (let i = 0; i < 100 && !ext.isActive; i++) {
 			await new Promise(resolve => setTimeout(resolve, 100));
 		}

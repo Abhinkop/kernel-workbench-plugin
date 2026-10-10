@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext): void {
 	if (!folder) {
 		return;
 	}
-	vscode.commands.executeCommand('setContext', 'kernelDev.active', true);
+	vscode.commands.executeCommand('setContext', 'kernelWorkbench.active', true);
 }
 
 /** Called by VS Code when the extension is shut down. */

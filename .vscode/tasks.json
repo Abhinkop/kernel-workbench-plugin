@@ -21,6 +21,34 @@
 			"script": "lint",
 			"problemMatcher": "$eslint-stylish",
 			"label": "npm: lint"
+		},
+		{
+			// Runs against the kernel tree in kernelWorkbench.dev.kernelTree, the same one
+			// "Run Extension" opens.
+			"type": "npm",
+			"script": "test:integration",
+			"label": "npm: test:integration",
+			"group": "test",
+			"options": {
+				"env": {
+					"KERNEL_TREE": "${config:kernelWorkbench.dev.kernelTree}"
+				}
+			}
+		},
+		{
+			// Sets kernelWorkbench.dev.kernelTree, the kernel tree used for developing this extension
+			"label": "Configure kernel tree",
+			"type": "process",
+			"command": "node",
+			"args": ["${workspaceFolder}/scripts/configure-kernel-tree.mjs", "${input:kernelTree}"],
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "kernelTree",
+			"type": "promptString",
+			"description": "Path to your Linux kernel clone"
 		}
 	]
 }
