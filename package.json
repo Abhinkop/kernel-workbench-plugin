@@ -37,6 +37,40 @@
 		"workspaceContains:Kbuild"
 	],
 	"contributes": {
+		"commands": [
+			{
+				"command": "kernelWorkbench.selectArch",
+				"title": "Select Architecture",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.selectVariant",
+				"title": "Select Debug / Release",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.selectConfig",
+				"title": "Select Base Config",
+				"category": "Kernel",
+				"icon": "$(file-code)"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "kernelWorkbench.selectArch",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.selectVariant",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.selectConfig",
+					"when": "kernelWorkbench.active"
+				}
+			]
+		},
 		"configuration": [
 			{
 				"title": "Configure",

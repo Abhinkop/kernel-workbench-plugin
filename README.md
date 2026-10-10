@@ -16,6 +16,11 @@ Configure, build, run and debug the Linux kernel from VS Code.
   architecture), `kernelWorkbench.variant` (`debug` or `release`),
   `kernelWorkbench.configure.defconfig` (the base config) and `kernelWorkbench.buildDirectory`
   (by default `build/${arch}/${variant}` in the tree).
+- Pick the build target of a kernel tree from the Command Palette: **Kernel: Select
+  Architecture**, **Kernel: Select Debug / Release** and **Kernel: Select Base Config**. The
+  base configs offered are `defconfig`, the architecture's `arch/<arch>/configs/*_defconfig`,
+  `tinyconfig` and `allnoconfig`, or an existing `.config` file. The pick is kept per tree,
+  and the base config per architecture.
 
 ## Requirements
 
