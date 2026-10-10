@@ -104,6 +104,7 @@ describe('Kernel Workbench, clicked through', function () {
 		for (const label of [
 			'Steps',
 			'Configure',
+			'Run',
 			'Target',
 			'Architecture',
 			'Build',
@@ -116,7 +117,9 @@ describe('Kernel Workbench, clicked through', function () {
 		// The Steps row named Build comes before the Target row of that name.
 		assert.match(await description('Build'), /^\w+ (Debug|Release) \(not configured yet\)$/);
 		assert.ok((await description('Base config')).length > 0, 'a base config');
+		assert.match(await description('Run'), /^\w+ (Debug|Release) in QEMU$/);
 		assert.strictEqual(await description('Configured'), 'not yet');
+		assert.strictEqual(await description('VM'), 'stopped');
 		assert.match(await description('Tools'), /^(all installed|missing \d+)$/);
 	});
 
@@ -199,7 +202,7 @@ describe('Kernel Workbench, clicked through', function () {
 			);
 		});
 
-		it('has the Kernel Workbench menu, Configure and Build on the toolbar', async () => {
+		it('has the Kernel Workbench menu, Configure, Build and Run on the toolbar', async () => {
 			const titles = await until(
 				async () => {
 					const actions = await new EditorView().getActions();
@@ -209,7 +212,7 @@ describe('Kernel Workbench, clicked through', function () {
 				10000,
 				'the editor toolbar',
 			);
-			for (const title of ['Kernel Workbench', 'Configure', 'Build']) {
+			for (const title of ['Kernel Workbench', 'Configure', 'Build', 'Run in QEMU']) {
 				assert.ok(
 					titles.some(t => t === title || t.startsWith(`${title} (`)),
 					`"${title}" in ${titles.join(' | ')}`,
@@ -220,7 +223,9 @@ describe('Kernel Workbench, clicked through', function () {
 		it('right-click offers the Kernel Workbench menu, not the steps', async () => {
 			const editor = new TextEditor();
 			const driver = editor.getDriver();
-			await driver.actions().contextClick(editor).perform();
+			// On the text itself: the minimap and the scrollbar have menus of their own.
+			const lines = await editor.findElement(By.className('view-lines'));
+			await driver.actions().contextClick(lines).perform();
 			const labels = await until(
 				() => contextMenuLabels(driver),
 				10000,
