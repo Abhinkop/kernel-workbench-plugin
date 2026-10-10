@@ -2,8 +2,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 
-suite('Opened on an ordinary folder', () => {
-	test('the extension stays inactive', async () => {
+describe('Opened on an ordinary folder', () => {
+	it('the extension stays inactive', async () => {
 		const ext = vscode.extensions.getExtension('ajose.kernel-workbench');
 		assert.ok(ext, 'extension ajose.kernel-workbench is not installed');
 		// Activation on workspaceContains happens at startup; give it time to (wrongly) happen.
