@@ -70,7 +70,8 @@ Configure, build, run and debug the Linux kernel from VS Code.
   and **Show Assembly for Current File (.s)** compile one file of the configured build; the
   `.i` and `.s` open beside the editor. **Build This Directory**, in the editor's and the
   Explorer's right-click menus under **Kernel Workbench**, builds a directory's objects and
-  links the modules it compiled. **Build Modules** (under More) runs `make modules`.
+  links the modules it compiled. **Build Modules** (under More) runs `make modules` on a built
+  kernel (modpost needs `vmlinux.o`).
 
 ## Requirements
 
