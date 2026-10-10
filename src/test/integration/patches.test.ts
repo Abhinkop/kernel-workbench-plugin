@@ -70,8 +70,9 @@ describe('Patches in VS Code', function () {
 			String(refused.asked[0]?.[0]),
 			/checkpatch reports \d+ errors? in 1 of 2 commits/,
 		);
+		// Another test file may have generated into its own directory before: check ours.
 		const generated = () => x.series.patches.output;
-		assert.strictEqual(generated(), undefined, 'nothing written');
+		assert.ok(!fs.existsSync(path.join(os.tmpdir(), 'kwb-it-patches')), 'nothing written');
 		const go = answer('showWarningMessage', ['Generate Anyway', 'Replace Them']);
 		try {
 			await vscode.commands.executeCommand('kernelWorkbench.series.generate');
