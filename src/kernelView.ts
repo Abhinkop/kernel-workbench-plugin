@@ -60,13 +60,33 @@ function collapsibleState(options: ItemOptions): vscode.TreeItemCollapsibleState
 		: vscode.TreeItemCollapsibleState.Expanded;
 }
 
+/** A row that runs a command when clicked. */
+function action(
+	label: string,
+	command: string,
+	icon: string,
+	description?: string,
+	tooltip?: string,
+): Item {
+	return new Item(label, {
+		icon,
+		description,
+		tooltip: tooltip ?? `Click to ${label.toLowerCase()}`,
+		contextValue: 'step',
+		command: { command, title: label },
+	});
+}
+
 /**
- * The Kernel view: the target (architecture, Debug/Release, base config) as
- * rows that show their value and open their picker on a click.
+ * The Kernel view: the steps (Configure) as rows that run on a click, the
+ * target (architecture, Debug/Release, base config) as rows that open their
+ * picker, and the state of each step.
  */
 export class KernelView implements vscode.TreeDataProvider<Item> {
 	private readonly _onDidChangeTreeData = new vscode.EventEmitter<Item | undefined>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+	/** Kernel tasks whose process is running. */
+	private readonly running = new Set<vscode.TaskExecution>();
 
 	constructor(
 		context: vscode.ExtensionContext,
@@ -75,10 +95,27 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 		context.subscriptions.push(
 			this._onDidChangeTreeData,
 			settings.onDidChange(() => this.refresh()),
+			// Tracked from the events: when onDidEndTaskProcess fires, the task is still
+			// listed in vscode.tasks.taskExecutions.
+			vscode.tasks.onDidStartTaskProcess(e => {
+				if (e.execution.task.source === 'kernel') {
+					this.running.add(e.execution);
+				}
+				this.refresh();
+			}),
+			vscode.tasks.onDidEndTaskProcess(e => {
+				this.running.delete(e.execution);
+				this.refresh();
+			}),
+			vscode.tasks.onDidEndTask(e => {
+				this.running.delete(e.execution);
+				this.refresh();
+			}),
 		);
 	}
 
 	refresh(): void {
+		vscode.commands.executeCommand('setContext', 'kernelWorkbench.busy', this.running.size > 0);
 		this._onDidChangeTreeData.fire(undefined);
 	}
 
@@ -87,7 +124,33 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 	}
 
 	getChildren(item?: Item): Item[] {
-		return item ? (item.children ?? []) : [this.targetGroup()];
+		if (item) {
+			return item.children ?? [];
+		}
+		return [this.stepsGroup(), this.targetGroup(), this.statusGroup()];
+	}
+
+	/** The target as the step rows name it: "arm64 Debug". */
+	private target(): string {
+		const settings = this.settings;
+		return `${settings.arch} ${settings.variant === 'debug' ? 'Debug' : 'Release'}`;
+	}
+
+	stepsGroup(): Item {
+		const settings = this.settings;
+		const target = this.target();
+		return new Item('Steps', {
+			icon: 'list-ordered',
+			children: [
+				action(
+					'Configure',
+					'kernelWorkbench.configure',
+					'gear',
+					`${target} from ${path.basename(settings.config)}`,
+					`Configure ${target} from ${settings.config} into ${settings.buildDir()}`,
+				),
+			],
+		});
 	}
 
 	targetGroup(): Item {
@@ -118,6 +181,28 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 				}),
 			],
 		});
+	}
+
+	statusGroup(): Item {
+		const settings = this.settings;
+		const configured = settings.configured();
+		const items: Item[] = [];
+		const busy = [...this.running][0];
+		if (busy) {
+			items.push(new Item('Running', { description: busy.task.name, icon: 'loading~spin' }));
+		}
+		items.push(
+			new Item('Configured', {
+				description: configured
+					? new Date(configured.configuredAt).toLocaleString()
+					: 'not yet',
+				icon: configured ? 'pass' : 'circle-large-outline',
+				tooltip: configured
+					? `From ${configured.config}\n${configured.buildDir}`
+					: settings.buildDir(),
+			}),
+		);
+		return new Item('Status', { icon: 'pulse', children: items });
 	}
 }
 

@@ -22,9 +22,13 @@ Configure, build, run and debug the Linux kernel from VS Code.
   The base configs offered are `defconfig`, the architecture's
   `arch/<arch>/configs/*_defconfig`, `tinyconfig` and `allnoconfig`, or an existing `.config`
   file. The pick is kept per tree, and the base config per architecture.
-- A **Kernel** tab in the activity bar. Its **Target** group shows the tree's architecture
-  (and whether it is a cross build), Debug or Release, and base config; click a row, or its
-  **Change…** action, to pick another.
+- A **Kernel** tab in the activity bar. Its **Steps** group has a **Configure** row, showing
+  what it would configure from which base config, that runs on a click. Its **Target** group
+  shows the tree's architecture (and whether it is a cross build), Debug or Release, and base
+  config; click a row, or its **Change…** action, to pick another. Its **Status** group shows
+  whether and when the target was configured, and the step that is running. Configure is
+  also a button on the editor toolbar and the Kernel view's toolbar, and in the Kernel
+  Workbench menu.
 - A **Kernel Workbench** menu (chip icon) on the toolbar of every editor in a kernel tree,
   with the three Select commands.
 - **Kernel: Configure** configures the selected target into its build directory: the base

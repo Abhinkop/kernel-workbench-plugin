@@ -83,6 +83,38 @@ describe('the manifest', () => {
 
 	describe('menus', () => {
 		const menus = contributes.menus ?? {};
+		const STEPS = ['kernelWorkbench.configure'];
+
+		it('puts the steps as buttons on the toolbar of every kernel editor', () => {
+			for (const command of STEPS) {
+				const item = (menus['editor/title'] ?? []).find((m: any) => m.command === command);
+				assert.ok(item, `${command} on the editor toolbar`);
+				assert.match(
+					item.group,
+					/^navigation/,
+					`${command} is a button, not in the … menu`,
+				);
+				assert.match(item.when, /^kernelWorkbench\.active/, `${command} on every editor`);
+				const declared = contributes.commands.find((c: any) => c.command === command);
+				assert.ok(declared?.icon, `${command} has an icon`);
+			}
+		});
+
+		it('puts the steps on the Kernel view toolbar and in the Kernel Workbench menu', () => {
+			for (const command of STEPS) {
+				const onView = (menus['view/title'] ?? []).some(
+					(m: any) =>
+						m.command === command &&
+						/view == kernelWorkbench\.kernel/.test(m.when) &&
+						/^navigation/.test(m.group),
+				);
+				assert.ok(onView, `${command} on the view toolbar`);
+				const inMenu = (menus['kernelWorkbench.target'] ?? []).some(
+					(m: any) => m.command === command,
+				);
+				assert.ok(inMenu, `${command} in the Kernel Workbench menu`);
+			}
+		});
 
 		it('puts the Kernel Workbench menu on the toolbar of every kernel editor', () => {
 			const item = (menus['editor/title'] ?? []).find(
@@ -98,15 +130,20 @@ describe('the manifest', () => {
 			assert.ok(submenu?.icon, 'has an icon');
 		});
 
-		it('offers the three Select commands in it', () => {
+		it('offers the steps first, then the three Select commands', () => {
+			const entries = menus['kernelWorkbench.target'] ?? [];
+			const commands = entries.map((m: any) => m.command);
 			assert.deepEqual(
-				(menus['kernelWorkbench.target'] ?? []).map((m: any) => m.command),
+				commands.filter((c: string) => /\.select/.test(c)),
 				[
 					'kernelWorkbench.selectArch',
 					'kernelWorkbench.selectVariant',
 					'kernelWorkbench.selectConfig',
 				],
 			);
+			const groups = entries.map((m: any) => m.group);
+			assert.deepEqual([...groups].sort(), groups, 'in group order: steps, then the target');
+			assert.match(groups[0], /^0_steps/);
 		});
 	});
 
