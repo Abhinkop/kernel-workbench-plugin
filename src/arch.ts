@@ -7,6 +7,8 @@ import * as os from 'os';
 export interface ArchInfo {
 	/** value of ARCH= for kbuild */
 	kernelArch: string;
+	/** default CROSS_COMPILE for GCC builds when cross compiling */
+	gccPrefix: string;
 	/** `uname -m` value of a host that can run this natively */
 	hostUname: string;
 }
@@ -14,14 +16,17 @@ export interface ArchInfo {
 const ARCHES: Record<string, ArchInfo> = {
 	x86_64: {
 		kernelArch: 'x86_64',
+		gccPrefix: 'x86_64-linux-gnu-',
 		hostUname: 'x86_64',
 	},
 	arm64: {
 		kernelArch: 'arm64',
+		gccPrefix: 'aarch64-linux-gnu-',
 		hostUname: 'aarch64',
 	},
 	riscv64: {
 		kernelArch: 'riscv',
+		gccPrefix: 'riscv64-linux-gnu-',
 		hostUname: 'riscv64',
 	},
 };

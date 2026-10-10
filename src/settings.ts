@@ -1,15 +1,33 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { ARCHES, isNative } from './arch';
+import { ARCHES, archInfo, isNative } from './arch';
 
 /**
  * Everything the user can set lives in VS Code settings (kernelWorkbench.*),
  * so it is configured once at user level and works in every kernel tree. The
  * current selection (arch, variant, config) is per-workspace UI state, not a
- * file.
+ * file. Configure records the exact make arguments in the build directory;
+ * Build reuses them.
  */
 
 export type Variant = 'debug' | 'release';
+
+/** What Configure recorded in <buildDir>/.kernel-workbench.json. */
+export interface Configured {
+	arch: string;
+	variant: Variant;
+	/** base config target or file */
+	config: string;
+	/** absolute */
+	buildDir: string;
+	/** O=, ARCH=, toolchain and user make args */
+	makeArgs: string[];
+	configuredAt: string;
+}
+
+const STATE_FILE = '.kernel-workbench.json';
 
 class Settings {
 	readonly context: vscode.ExtensionContext;
@@ -88,6 +106,62 @@ class Settings {
 			this.root,
 			tmpl.replace(/\$\{arch\}/g, arch).replace(/\$\{variant\}/g, variant),
 		);
+	}
+
+	/**
+	 * make arguments for a fresh Configure of the current selection. ARCH and
+	 * CROSS_COMPILE are always explicit so the environment cannot change what
+	 * gets built.
+	 */
+	makeArgsForConfigure(): string[] {
+		const arch = this.arch;
+		const info = archInfo(arch);
+		const args = [`O=${this.buildDir()}`, `ARCH=${info.kernelArch}`];
+		const ccache = this.get('make.ccache', false);
+		if (this.get('toolchain', 'gcc') === 'llvm') {
+			args.push('LLVM=1', 'CROSS_COMPILE=');
+			if (ccache) {
+				args.push('CC=ccache clang');
+			}
+		} else {
+			const prefixes = this.get<Record<string, string>>('crossCompile', {});
+			const prefix = prefixes[arch] ?? (isNative(arch) ? '' : info.gccPrefix);
+			args.push(`CROSS_COMPILE=${prefix}`);
+			if (ccache) {
+				args.push(`CC=ccache ${prefix}gcc`);
+			}
+		}
+		return args.concat(this.get<string[]>('make.args', []));
+	}
+
+	/** make -j: kernelWorkbench.make.jobs, or the number of CPUs. */
+	jobs(): string {
+		const jobs = this.get('make.jobs', 0);
+		return `-j${jobs > 0 ? jobs : os.cpus().length}`;
+	}
+
+	// --- recorded configure state -------------------------------------------
+
+	/** What Configure recorded for the current selection, if it has run. */
+	configured(): Configured | undefined {
+		try {
+			return JSON.parse(fs.readFileSync(path.join(this.buildDir(), STATE_FILE), 'utf8'));
+		} catch {
+			return undefined;
+		}
+	}
+
+	/** Forgets what Configure recorded for the current selection. */
+	clearConfigured(): void {
+		fs.rmSync(path.join(this.buildDir(), STATE_FILE), { force: true });
+		this._onDidChange.fire();
+	}
+
+	saveConfigured(state: Configured): void {
+		fs.mkdirSync(state.buildDir, { recursive: true });
+		const file = path.join(state.buildDir, STATE_FILE);
+		fs.writeFileSync(file, JSON.stringify(state, null, '\t') + '\n');
+		this._onDidChange.fire();
 	}
 }
 

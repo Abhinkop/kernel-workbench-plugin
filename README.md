@@ -27,6 +27,18 @@ Configure, build, run and debug the Linux kernel from VS Code.
   **Change…** action, to pick another.
 - A **Kernel Workbench** menu (chip icon) on the toolbar of every editor in a kernel tree,
   with the three Select commands.
+- **Kernel: Configure** configures the selected target into its build directory: the base
+  config (a make target, or a `.config` file copied in), the fragments in
+  `kernelWorkbench.configure.fragments` merged with `scripts/kconfig/merge_config.sh`, the
+  Debug or Release options (`kernelWorkbench.configure.debugOptions` and `releaseOptions`)
+  and `kernelWorkbench.configure.options` applied with `scripts/config`, then
+  `make olddefconfig`; options Kconfig dropped are reported. The make arguments (`O=`,
+  `ARCH=`, `CROSS_COMPILE=` from `kernelWorkbench.crossCompile` or the architecture's
+  default, `LLVM=1` for `kernelWorkbench.toolchain: llvm`, `CC=ccache …` with
+  `kernelWorkbench.make.ccache`, `kernelWorkbench.make.args`, and `-j` from
+  `kernelWorkbench.make.jobs`) are recorded in `<build dir>/.kernel-workbench.json`. The
+  step runs in a terminal that closes when it succeeds and stays open when it fails
+  (`kernelWorkbench.terminal.afterTask`).
 
 ## Requirements
 
