@@ -89,7 +89,7 @@ describe('the manifest', () => {
 
 	describe('menus', () => {
 		const menus = contributes.menus ?? {};
-		const STEPS = ['kernelWorkbench.configure'];
+		const STEPS = ['kernelWorkbench.configure', 'kernelWorkbench.build'];
 
 		it('puts the steps as buttons on the toolbar of every kernel editor', () => {
 			for (const command of STEPS) {

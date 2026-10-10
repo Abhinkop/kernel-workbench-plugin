@@ -24,8 +24,11 @@ describe('Configure in VS Code', function () {
 
 	it('shows the Configure step and that nothing is configured yet', async () => {
 		const steps = await labels(x.kernelView, await child(x.kernelView, 'Steps'));
-		assert.deepStrictEqual(steps, ['Configure — x86_64 Debug from defconfig']);
-		assert.deepStrictEqual(await status(), ['Configured — not yet']);
+		assert.deepStrictEqual(steps, [
+			'Configure — x86_64 Debug from defconfig',
+			'Build — x86_64 Debug (not configured yet)',
+		]);
+		assert.deepStrictEqual(await status(), ['Configured — not yet', 'Built — not yet']);
 	});
 
 	it('configures with the Debug options, and closes its terminal', async () => {

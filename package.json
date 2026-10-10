@@ -91,6 +91,11 @@
 					"command": "kernelWorkbench.configure",
 					"when": "kernelWorkbench.active",
 					"group": "navigation@-9"
+				},
+				{
+					"command": "kernelWorkbench.build",
+					"when": "kernelWorkbench.active",
+					"group": "navigation@-8"
 				}
 			],
 			"view/title": [
@@ -98,12 +103,21 @@
 					"command": "kernelWorkbench.configure",
 					"when": "view == kernelWorkbench.kernel",
 					"group": "navigation@1"
+				},
+				{
+					"command": "kernelWorkbench.build",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "navigation@2"
 				}
 			],
 			"kernelWorkbench.target": [
 				{
 					"command": "kernelWorkbench.configure",
 					"group": "0_steps@1"
+				},
+				{
+					"command": "kernelWorkbench.build",
+					"group": "0_steps@2"
 				},
 				{
 					"command": "kernelWorkbench.selectArch",

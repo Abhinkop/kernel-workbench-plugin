@@ -1,6 +1,8 @@
 // The Kernel view: the Steps, Target and Status groups, the values their
 // rows show, "Change…" opening a target row's picker, and the running step.
 import * as assert from 'node:assert/strict';
+import * as fs from 'fs';
+import * as path from 'path';
 import { answer, extensionContext, state, vscode, workspaceFolder } from '../helpers/vscode';
 import { fakeGit, kernelTree } from '../helpers/repo';
 import { isNative } from '../../arch';
@@ -53,6 +55,12 @@ describe('the Kernel view', () => {
 					'kernelWorkbench.configure',
 					'step',
 				],
+				[
+					'Build',
+					`${settings.arch} Debug (not configured yet)`,
+					'kernelWorkbench.build',
+					'step',
+				],
 			],
 		);
 		assert.deepEqual(labels(kernelView, group(kernelView, 'Target')), [
@@ -60,7 +68,10 @@ describe('the Kernel view', () => {
 			'Build — Debug',
 			'Base config — defconfig',
 		]);
-		assert.deepEqual(labels(kernelView, group(kernelView, 'Status')), ['Configured — not yet']);
+		assert.deepEqual(labels(kernelView, group(kernelView, 'Status')), [
+			'Configured — not yet',
+			'Built — not yet',
+		]);
 	});
 
 	it('shows the picked values, and re-renders when they change', async () => {
@@ -92,10 +103,32 @@ describe('the Kernel view', () => {
 			makeArgs: ['O=x'],
 			configuredAt: '2026-10-10T09:00:00.000Z',
 		});
-		const [configured] = kernelView.getChildren(group(kernelView, 'Status'));
+		const [configured, built] = kernelView.getChildren(group(kernelView, 'Status'));
 		assert.equal(configured.label, 'Configured');
 		assert.notEqual(configured.description, 'not yet');
 		assert.match(String(configured.tooltip), /^From defconfig\n/);
+		assert.equal(built.description, 'not yet');
+		const [, build] = kernelView.getChildren(group(kernelView, 'Steps'));
+		assert.equal(build.description, `${settings.arch} Debug`, 'Build no longer warns');
+	});
+
+	it('shows the built image and when it was built', () => {
+		const { kernelView, settings, kbuild } = open();
+		const recorded = {
+			arch: settings.arch,
+			variant: 'debug' as const,
+			config: 'defconfig',
+			buildDir: settings.buildDir(),
+			makeArgs: ['O=x'],
+			configuredAt: '2026-10-10T09:00:00.000Z',
+		};
+		settings.saveConfigured(recorded);
+		const image = kbuild.image(recorded);
+		fs.mkdirSync(path.dirname(image), { recursive: true });
+		fs.writeFileSync(image, '');
+		const [, built] = kernelView.getChildren(group(kernelView, 'Status'));
+		assert.match(String(built.description), new RegExp(`^${path.basename(image)}, `));
+		assert.equal(built.tooltip, image);
 	});
 
 	it('shows the step that is running, and sets kernelWorkbench.busy', async () => {
@@ -107,10 +140,14 @@ describe('the Kernel view', () => {
 				.pop()?.args[1];
 		const done = runTask(settings.folder, 'Configure x86_64 Debug', 'sh', ['-c', 'sleep 0.3']);
 		await new Promise(resolve => setTimeout(resolve, 100));
-		assert.deepEqual(status(), ['Running — Configure x86_64 Debug', 'Configured — not yet']);
+		assert.deepEqual(status(), [
+			'Running — Configure x86_64 Debug',
+			'Configured — not yet',
+			'Built — not yet',
+		]);
 		assert.equal(busy(), true);
 		await done;
-		assert.deepEqual(status(), ['Configured — not yet']);
+		assert.deepEqual(status(), ['Configured — not yet', 'Built — not yet']);
 		assert.equal(busy(), false);
 	});
 

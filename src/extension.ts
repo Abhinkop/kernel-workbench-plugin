@@ -25,7 +25,7 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 	const settings = new Settings(context, folder);
 	const kbuild = new Kbuild(settings);
 	registerCommands(context, settings, kbuild);
-	const kernelView = registerKernelView(context, settings);
+	const kernelView = registerKernelView(context, settings, kbuild);
 	return { settings, kbuild, kernelView };
 }
 

@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import * as path from 'path';
 import { isNative } from './arch';
+import type { Kbuild } from './kbuild';
 import type { Settings } from './settings';
 
 /** How a row's value is edited. The target rows route to their Select command. */
@@ -78,7 +80,7 @@ function action(
 }
 
 /**
- * The Kernel view: the steps (Configure) as rows that run on a click, the
+ * The Kernel view: the steps (Configure, Build) as rows that run on a click, the
  * target (architecture, Debug/Release, base config) as rows that open their
  * picker, and the state of each step.
  */
@@ -91,6 +93,7 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 	constructor(
 		context: vscode.ExtensionContext,
 		private readonly settings: Settings,
+		private readonly kbuild: Kbuild,
 	) {
 		context.subscriptions.push(
 			this._onDidChangeTreeData,
@@ -139,6 +142,7 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 	stepsGroup(): Item {
 		const settings = this.settings;
 		const target = this.target();
+		const configured = settings.configured();
 		return new Item('Steps', {
 			icon: 'list-ordered',
 			children: [
@@ -148,6 +152,12 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 					'gear',
 					`${target} from ${path.basename(settings.config)}`,
 					`Configure ${target} from ${settings.config} into ${settings.buildDir()}`,
+				),
+				action(
+					'Build',
+					'kernelWorkbench.build',
+					'tools',
+					configured ? target : `${target} (not configured yet)`,
 				),
 			],
 		});
@@ -186,6 +196,8 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 	statusGroup(): Item {
 		const settings = this.settings;
 		const configured = settings.configured();
+		const image = configured ? this.kbuild.image(configured) : undefined;
+		const built = image ? modifiedAt(image) : undefined;
 		const items: Item[] = [];
 		const busy = [...this.running][0];
 		if (busy) {
@@ -193,17 +205,34 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 		}
 		items.push(
 			new Item('Configured', {
-				description: configured
-					? new Date(configured.configuredAt).toLocaleString()
-					: 'not yet',
+				description: configured ? when(new Date(configured.configuredAt)) : 'not yet',
 				icon: configured ? 'pass' : 'circle-large-outline',
 				tooltip: configured
 					? `From ${configured.config}\n${configured.buildDir}`
 					: settings.buildDir(),
 			}),
+			new Item('Built', {
+				description: image && built ? `${path.basename(image)}, ${when(built)}` : 'not yet',
+				icon: built ? 'pass' : 'circle-large-outline',
+				tooltip: image,
+			}),
 		);
 		return new Item('Status', { icon: 'pulse', children: items });
 	}
+}
+
+/** When a file was last written, if it exists. */
+function modifiedAt(file: string): Date | undefined {
+	try {
+		return fs.statSync(file).mtime;
+	} catch {
+		return undefined;
+	}
+}
+
+/** A date as the Status rows show it. */
+function when(date: Date): string {
+	return date.toLocaleString();
 }
 
 /** The Select command that a target row's "Change…" runs. */
@@ -217,8 +246,9 @@ const SELECT_COMMANDS: Record<string, string> = {
 export function registerKernelView(
 	context: vscode.ExtensionContext,
 	settings: Settings,
+	kbuild: Kbuild,
 ): KernelView {
-	const view = new KernelView(context, settings);
+	const view = new KernelView(context, settings, kbuild);
 	context.subscriptions.push(
 		vscode.window.createTreeView('kernelWorkbench.kernel', {
 			treeDataProvider: view,
