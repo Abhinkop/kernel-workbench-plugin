@@ -7,7 +7,8 @@ const mocha = { ui: 'bdd', timeout: 20000 };
 
 const fixture = name => fileURLToPath(new URL(`./test-fixtures/${name}`, import.meta.url));
 
-// A real kernel clone, for the integration tests (npm run test:integration).
+// A real kernel clone, for the integration tests (npm run test:integration): the activation
+// test again, and src/test/integration/*.test.ts, inside VS Code with the clone open.
 const kernelTree = process.env.KERNEL_TREE;
 
 export default defineConfig([
@@ -26,8 +27,11 @@ export default defineConfig([
 	...(kernelTree
 		? [
 				{
-					label: 'mainline-kernel',
-					files: 'out/test/activation/kernelTree.test.js',
+					label: 'integration',
+					files: [
+						'out/test/activation/kernelTree.test.js',
+						'out/test/integration/*.test.js',
+					],
 					workspaceFolder: kernelTree,
 					mocha,
 				},
