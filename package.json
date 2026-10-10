@@ -36,6 +36,56 @@
 	"activationEvents": [
 		"workspaceContains:Kbuild"
 	],
+	"contributes": {
+		"configuration": [
+			{
+				"title": "Configure",
+				"order": 1,
+				"properties": {
+					"kernelWorkbench.arch": {
+						"type": "string",
+						"enum": [
+							"",
+							"x86_64",
+							"arm64",
+							"riscv64"
+						],
+						"default": "",
+						"description": "Default architecture for trees where none was picked. Empty: the host architecture.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.variant": {
+						"type": "string",
+						"enum": [
+							"debug",
+							"release"
+						],
+						"default": "debug",
+						"description": "Default build variant for trees where none was picked.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.configure.defconfig": {
+						"type": "string",
+						"default": "defconfig",
+						"markdownDescription": "Default base config: one or more make targets (`defconfig`, `defconfig kvm_guest.config`, `tinyconfig`) or a path to a `.config` file. A base config picked for an architecture overrides it.",
+						"scope": "resource"
+					}
+				}
+			},
+			{
+				"title": "Build",
+				"order": 2,
+				"properties": {
+					"kernelWorkbench.buildDirectory": {
+						"type": "string",
+						"default": "build/${arch}/${variant}",
+						"markdownDescription": "Build output (`O=`), relative to the kernel tree or absolute. `${arch}` and `${variant}` are substituted.",
+						"scope": "resource"
+					}
+				}
+			}
+		]
+	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
@@ -46,7 +96,7 @@
 		"format:check": "prettier --check .",
 		"test": "vscode-test",
 		"package": "vsce package",
-		"test:unit": "npm run compile && node --test out/test/unit/kernelTree.unit.js",
+		"test:unit": "npm run compile && node --test out/test/unit/*.unit.js",
 		"test:integration": "npm run compile && node --test out/test/integration/kernelTree.integration.js && vscode-test --label mainline-kernel"
 	},
 	"devDependencies": {

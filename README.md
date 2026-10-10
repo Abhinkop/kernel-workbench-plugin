@@ -12,6 +12,10 @@ Configure, build, run and debug the Linux kernel from VS Code.
   `PATCHLEVEL` and its git history contains the first mainline Linux commit
   (`1da177e4c3f4`).
 - Sets the `kernelWorkbench.active` context key in kernel trees.
+- Settings for the build target's defaults: `kernelWorkbench.arch` (empty: the host's
+  architecture), `kernelWorkbench.variant` (`debug` or `release`),
+  `kernelWorkbench.configure.defconfig` (the base config) and `kernelWorkbench.buildDirectory`
+  (by default `build/${arch}/${variant}` in the tree).
 
 ## Requirements
 
