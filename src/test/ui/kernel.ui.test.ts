@@ -297,6 +297,31 @@ describe('Kernel Workbench, clicked through', function () {
 		assert.ok(picks.includes('Kernel: Send Patches…'), picks.join(' | '));
 	});
 
+	it('offers to fetch or load a series in the Apply view', async () => {
+		const control = await until(
+			() => new ActivityBar().getViewControl('Kernel Git'),
+			10000,
+			'the Kernel Git view control',
+		);
+		await control.click();
+		const welcome = await until(
+			async () => {
+				const section = await new SideBarView().getContent().getSection('Apply');
+				await section.expand();
+				// The welcome content, from the DOM: its text and its buttons' labels.
+				const views = await section.findElements(By.css('.welcome-view-content'));
+				const texts = await Promise.all(views.map(v => v.getAttribute('textContent')));
+				const text = texts.join(' ').replace(/\s+/g, ' ');
+				return text.includes('b4') ? text : undefined;
+			},
+			30000,
+			'the Apply view’s welcome content',
+		);
+		assert.ok(welcome.includes('Fetch Series from lore…'), welcome);
+		assert.ok(welcome.includes('Apply mbox or Patch Files…'), welcome);
+		await (await new ActivityBar().getViewControl('Explorer'))?.click();
+	});
+
 	describe('editor', () => {
 		before(async () => {
 			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
