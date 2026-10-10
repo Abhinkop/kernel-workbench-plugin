@@ -39,6 +39,9 @@ async function main(): Promise<number> {
 			JSON.stringify({
 				'security.workspace.trust.enabled': false,
 				'workbench.startupEditor': 'none',
+				// Menus drawn by VS Code, which the tests can see; native ones they cannot.
+				'window.titleBarStyle': 'custom',
+				'window.menuStyle': 'custom',
 				'workbench.view.alwaysShowHeaderActions': true,
 				'window.dialogStyle': 'custom',
 				'extensions.autoCheckUpdates': false,
