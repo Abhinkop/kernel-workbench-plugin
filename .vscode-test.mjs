@@ -33,6 +33,8 @@ export default defineConfig([
 						'out/test/integration/*.test.js',
 					],
 					workspaceFolder: kernelTree,
+					// The end-to-end tests debug with the C/C++ extension, installed from the Marketplace.
+					installExtensions: process.env.KERNEL_E2E === '1' ? ['ms-vscode.cpptools'] : [],
 					mocha,
 				},
 			]
