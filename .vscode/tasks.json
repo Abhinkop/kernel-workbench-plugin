@@ -44,6 +44,19 @@
 			"problemMatcher": []
 		},
 		{
+			// The integration tests plus the end-to-end ones, which build a kernel (minutes)
+			"type": "npm",
+			"script": "test:integration",
+			"label": "npm: test:integration (end to end)",
+			"group": "test",
+			"options": {
+				"env": {
+					"KERNEL_TREE": "${config:kernelWorkbench.dev.kernelTree}",
+					"KERNEL_E2E": "1"
+				}
+			}
+		},
+		{
 			// Clicks through a real VS Code window on the kernel tree in
 			// kernelWorkbench.dev.kernelTree
 			"type": "npm",

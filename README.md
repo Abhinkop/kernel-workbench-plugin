@@ -55,23 +55,25 @@ Configure, build, run and debug the Linux kernel from VS Code.
 
 ## Development
 
-| Task              | Command                        |
-| ----------------- | ------------------------------ |
-| Build             | `npm run compile`              |
-| Unit tests        | `npm run test:unit`            |
-| VS Code tests     | `npm test`                     |
-| Integration tests | Task **npm: test:integration** |
-| UI tests          | Task **npm: test:ui**          |
-| Lint              | `npm run lint`                 |
-| Format            | `npm run format`               |
-| Set kernel tree   | Task **Configure kernel tree** |
+| Task              | Command                                     |
+| ----------------- | ------------------------------------------- |
+| Build             | `npm run compile`                           |
+| Unit tests        | `npm run test:unit`                         |
+| VS Code tests     | `npm test`                                  |
+| Integration tests | Task **npm: test:integration**              |
+| End to end        | Task **npm: test:integration (end to end)** |
+| UI tests          | Task **npm: test:ui**                       |
+| Lint              | `npm run lint`                              |
+| Format            | `npm run format`                            |
+| Set kernel tree   | Task **Configure kernel tree**              |
 
 The integration tests, the UI tests and the **Run Extension** launch configuration all use the
 kernel tree set in `kernelWorkbench.dev.kernelTree` in `.vscode/settings.json`. Set it with the
 **Configure kernel tree** task. It must be a full clone (not `--depth 1`). Both test suites
 run on a throwaway `--shared` clone of that tree, so steps such as Configure can write into
 it without touching yours; they need `git` and the kernel's build tools (`make`, `gcc`,
-`flex`, `bison`, ...). The UI tests click through a real VS Code window with
+`flex`, `bison`, ...). The end-to-end tests (`KERNEL_E2E=1`) also build a kernel, which takes
+minutes. The UI tests click through a real VS Code window with
 [vscode-extension-tester](https://github.com/redhat-developer/vscode-extension-tester); the
 first run downloads VS Code and ChromeDriver into `.vscode-test/extest`. CI clones mainline
 Linux for both.
