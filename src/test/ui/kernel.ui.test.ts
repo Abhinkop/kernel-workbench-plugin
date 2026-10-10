@@ -9,7 +9,10 @@ import {
 	EditorView,
 	InputBox,
 	Key,
+	TextEditor,
 	VSBrowser,
+	WebDriver,
+	WebElement,
 	Workbench,
 } from 'vscode-extension-tester';
 import type { CustomTreeSection } from 'vscode-extension-tester';
@@ -37,6 +40,33 @@ async function until<T>(
 		}
 		await new Promise(resolve => setTimeout(resolve, 250));
 	}
+}
+
+/**
+ * The entries of the open context menu, read from the DOM: the menu fades in, and when the
+ * test window is not in front the fade may never finish, so Selenium does not count it as
+ * displayed. Since VS Code 1.133 some menus (the text editor's) render in a shadow root on a
+ * .shadow-root-host; the others in the document's .context-view.
+ */
+async function contextMenuLabels(driver: WebDriver): Promise<string[] | undefined> {
+	const read = async (scope: { findElements(by: By): Promise<WebElement[]> }) => {
+		const entries = await scope.findElements(By.css('.monaco-menu .action-label'));
+		const texts = await Promise.all(entries.map(e => e.getAttribute('textContent')));
+		return texts.map(t => (t ?? '').trim());
+	};
+	for (const host of await driver.findElements(By.css('.shadow-root-host'))) {
+		const labels = await read(await host.getShadowRoot()).catch(() => []);
+		if (labels.length) {
+			return labels;
+		}
+	}
+	for (const view of await driver.findElements(By.css('.context-view'))) {
+		const labels = await read(view);
+		if (labels.length) {
+			return labels;
+		}
+	}
+	return undefined;
 }
 
 describe('Kernel Workbench, clicked through', function () {
@@ -94,19 +124,7 @@ describe('Kernel Workbench, clicked through', function () {
 		const item = await row('Architecture');
 		const driver = item.getDriver();
 		await driver.actions().contextClick(item).perform();
-		// The menu's entries, from the DOM: the menu fades in, and when the test window is
-		// not in front the fade may never finish, so Selenium does not count it as displayed.
-		const labels = await until(
-			async () => {
-				const entries = await driver.findElements(
-					By.css('.context-view .monaco-menu .action-label'),
-				);
-				const texts = await Promise.all(entries.map(e => e.getAttribute('textContent')));
-				return texts.length ? texts.map(t => (t ?? '').trim()) : undefined;
-			},
-			10000,
-			'the context menu',
-		);
+		const labels = await until(() => contextMenuLabels(driver), 10000, 'the context menu');
 		await driver.actions().sendKeys(Key.ESCAPE).perform();
 		assert.deepStrictEqual(labels, ['Change…']);
 	});
@@ -197,6 +215,24 @@ describe('Kernel Workbench, clicked through', function () {
 					`"${title}" in ${titles.join(' | ')}`,
 				);
 			}
+		});
+
+		it('right-click offers the Kernel Workbench menu, not the steps', async () => {
+			const editor = new TextEditor();
+			const driver = editor.getDriver();
+			await driver.actions().contextClick(editor).perform();
+			const labels = await until(
+				() => contextMenuLabels(driver),
+				10000,
+				'the editor context menu',
+			);
+			await driver.actions().sendKeys(Key.ESCAPE).perform();
+			assert.ok(labels.includes('Kernel Workbench'), labels.join(', '));
+			assert.ok(
+				!labels.includes('Build') && !labels.includes('Configure'),
+				labels.join(', '),
+			);
+			// The submenu's own entries are checked against the manifest in the unit tests.
 		});
 
 		after(async () => {
