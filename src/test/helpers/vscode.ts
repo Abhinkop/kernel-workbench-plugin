@@ -232,7 +232,30 @@ export interface TextEditorLike {
 	document: TextDocumentLike;
 	selection: Selection;
 	options?: unknown;
+	revealRange?(range: Range, type?: number): void;
 }
+
+export class InlayHintLabelPart {
+	command?: { command: string; title: string; arguments?: unknown[] };
+	tooltip?: unknown;
+	constructor(readonly value: string) {}
+}
+
+export class InlayHint {
+	paddingRight?: boolean;
+	constructor(
+		readonly position: Position,
+		readonly label: string | InlayHintLabelPart[],
+		readonly kind?: number,
+	) {}
+}
+
+export const TextEditorRevealType = {
+	Default: 0,
+	InCenter: 1,
+	InCenterIfOutsideViewport: 2,
+	AtTop: 3,
+} as const;
 
 export const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 } as const;
 
@@ -261,6 +284,7 @@ export interface TreeView {
 	visible: boolean;
 	message?: string;
 	description?: string;
+	onDidChangeVisibility(listener: () => void): { dispose(): void };
 	dispose(): void;
 }
 
@@ -365,6 +389,8 @@ export const state = {
 	contentProviders: {} as Record<string, ContentProvider>,
 	/** Document link providers registered. */
 	linkProviders: [] as unknown[],
+	/** Inlay hints providers registered. */
+	inlayHintsProviders: [] as unknown[],
 	/** Every test run that ended. */
 	testRuns: [] as TestRun[],
 };
@@ -404,6 +430,9 @@ const onDidChangeConfiguration = new EventEmitter<{
 const onDidOpenTerminal = new EventEmitter<Terminal>();
 const onDidCloseTerminal = new EventEmitter<Terminal>();
 const onDidChangeActiveTextEditor = new EventEmitter<TextEditorLike | undefined>();
+const onDidChangeTextEditorSelection = new EventEmitter<{ textEditor: TextEditorLike }>();
+const onDidChangeTextDocument = new EventEmitter<{ document: TextDocumentLike }>();
+const onDidSaveTextDocument = new EventEmitter<TextDocumentLike>();
 interface TaskExecution {
 	task: Task;
 }
@@ -469,6 +498,9 @@ export const vscode = {
 	Diagnostic,
 	DiagnosticSeverity,
 	DocumentLink,
+	InlayHint,
+	InlayHintLabelPart,
+	TextEditorRevealType,
 	MarkdownString,
 	Selection,
 	Location,
@@ -480,6 +512,8 @@ export const vscode = {
 		workspaceFolders: [] as WorkspaceFolder[],
 		getConfiguration: (section?: string) => configuration(section),
 		onDidChangeConfiguration: onDidChangeConfiguration.event,
+		onDidChangeTextDocument: onDidChangeTextDocument.event,
+		onDidSaveTextDocument: onDidSaveTextDocument.event,
 		registerTextDocumentContentProvider: (scheme: string, provider: ContentProvider) => {
 			state.contentProviders[scheme] = provider;
 			return { dispose: () => delete state.contentProviders[scheme] };
@@ -527,6 +561,16 @@ export const vscode = {
 				dispose: clear,
 			};
 		},
+		registerInlayHintsProvider: (_selector: unknown, provider: unknown) => {
+			state.inlayHintsProviders.push(provider);
+			return {
+				dispose: () => {
+					state.inlayHintsProviders = state.inlayHintsProviders.filter(
+						p => p !== provider,
+					);
+				},
+			};
+		},
 		registerDocumentLinkProvider: (_selector: unknown, provider: unknown) => {
 			state.linkProviders.push(provider);
 			return {
@@ -551,6 +595,7 @@ export const vscode = {
 				id,
 				provider: options.treeDataProvider,
 				visible: true,
+				onDidChangeVisibility: () => ({ dispose() {} }),
 				dispose() {},
 			};
 			state.providers[`tree:${id}`] = view;
@@ -569,6 +614,7 @@ export const vscode = {
 				document,
 				selection: new Selection(0, 0, 0, 0),
 				options,
+				revealRange() {},
 			};
 			vscode.window.activeTextEditor = editor;
 			state.shown.push({ uri: document.uri.toString(), options });
@@ -602,7 +648,9 @@ export const vscode = {
 		onDidOpenTerminal: onDidOpenTerminal.event,
 		onDidCloseTerminal: onDidCloseTerminal.event,
 		onDidChangeActiveTextEditor: onDidChangeActiveTextEditor.event,
+		onDidChangeTextEditorSelection: onDidChangeTextEditorSelection.event,
 		tabGroups: { all: [] as unknown[] },
+		visibleTextEditors: [] as TextEditorLike[],
 	},
 
 	tasks: {
@@ -742,6 +790,7 @@ export function reset(): void {
 	state.diagnostics.clear();
 	state.contentProviders = {};
 	state.linkProviders = [];
+	state.inlayHintsProviders = [];
 	state.testRuns = [];
 	vscode.window.activeTextEditor = undefined;
 	state.commands.clear();
@@ -751,6 +800,9 @@ export function reset(): void {
 		onDidOpenTerminal,
 		onDidCloseTerminal,
 		onDidChangeActiveTextEditor,
+		onDidChangeTextEditorSelection,
+		onDidChangeTextDocument,
+		onDidSaveTextDocument,
 		onDidStartTaskProcess,
 		onDidEndTaskProcess,
 		onDidEndTask,

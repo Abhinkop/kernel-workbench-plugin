@@ -243,6 +243,33 @@
 				"title": "Open on lore.kernel.org",
 				"category": "Kernel",
 				"icon": "$(link-external)"
+			},
+			{
+				"command": "kernelWorkbench.blame.toggle",
+				"title": "Toggle Blame Annotations",
+				"category": "Kernel",
+				"icon": "$(person)"
+			},
+			{
+				"command": "kernelWorkbench.blame.before",
+				"title": "Blame Before This Commit",
+				"category": "Kernel",
+				"icon": "$(history)"
+			},
+			{
+				"command": "kernelWorkbench.blame.copyFixes",
+				"title": "Copy Fixes: Line",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.blame.copyHash",
+				"title": "Copy Commit Hash",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.blame.openOnLore",
+				"title": "Open on lore.kernel.org",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -310,6 +337,11 @@
 					"command": "kernelWorkbench.history.showLines",
 					"when": "kernelWorkbench.active && resourceScheme == file && editorHasSelection",
 					"group": "2_git@2"
+				},
+				{
+					"command": "kernelWorkbench.blame.toggle",
+					"when": "kernelWorkbench.active && (resourceScheme == file || resourceScheme == kernel-git && resourcePath =~ /^\\/blob\\//)",
+					"group": "2_git@3"
 				}
 			],
 			"kernelWorkbench.explorerContext": [
@@ -384,6 +416,11 @@
 					"command": "kernelWorkbench.git.openOnLore",
 					"when": "resourceScheme == kernel-git && resourcePath =~ /^\\/(commit|full|file|stat)\\//",
 					"group": "1_kernel@3"
+				},
+				{
+					"command": "kernelWorkbench.blame.toggle",
+					"when": "kernelWorkbench.active && (resourceScheme == file || resourceScheme == kernel-git && resourcePath =~ /^\\/blob\\//)",
+					"group": "1_kernel@0"
 				}
 			],
 			"view/title": [
@@ -461,6 +498,11 @@
 					"command": "kernelWorkbench.history.refresh",
 					"when": "view == kernelWorkbench.history",
 					"group": "navigation@3"
+				},
+				{
+					"command": "kernelWorkbench.blame.toggle",
+					"when": "view == kernelWorkbench.blame",
+					"group": "navigation@1"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -672,6 +714,26 @@
 				{
 					"command": "kernelWorkbench.git.openOnLore",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.blame.toggle",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.blame.before",
+					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.blame.copyFixes",
+					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.blame.copyHash",
+					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.blame.openOnLore",
+					"when": "false"
 				}
 			],
 			"view/item/context": [
@@ -719,6 +781,31 @@
 					"command": "kernelWorkbench.git.openOnLore",
 					"when": "view == kernelWorkbench.history && viewItem == commit",
 					"group": "2_open@3"
+				},
+				{
+					"command": "kernelWorkbench.blame.before",
+					"when": "view == kernelWorkbench.blame && viewItem == blameCommit",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.blame.before",
+					"when": "view == kernelWorkbench.blame && viewItem == blameCommit",
+					"group": "1_blame@1"
+				},
+				{
+					"command": "kernelWorkbench.blame.copyFixes",
+					"when": "view == kernelWorkbench.blame && viewItem == blameCommit",
+					"group": "2_copy@1"
+				},
+				{
+					"command": "kernelWorkbench.blame.copyHash",
+					"when": "view == kernelWorkbench.blame && viewItem == blameCommit",
+					"group": "2_copy@2"
+				},
+				{
+					"command": "kernelWorkbench.blame.openOnLore",
+					"when": "view == kernelWorkbench.blame && viewItem == blameCommit",
+					"group": "3_open@1"
 				}
 			]
 		},
@@ -751,6 +838,12 @@
 					"name": "File History",
 					"when": "kernelWorkbench.active",
 					"icon": "media/history.svg"
+				},
+				{
+					"id": "kernelWorkbench.blame",
+					"name": "Blame",
+					"when": "kernelWorkbench.active",
+					"icon": "media/blame.svg"
 				}
 			]
 		},
@@ -1144,6 +1237,24 @@
 						"type": "string",
 						"default": "",
 						"markdownDescription": "`.kunitconfig` (a file or a directory) for the Testing view's runs, e.g. `lib/kunit` or `kernel/sched`. Empty: kunit.py's default set.",
+						"scope": "resource"
+					}
+				}
+			},
+			{
+				"title": "Git",
+				"order": 6,
+				"properties": {
+					"kernelWorkbench.blame.ignoreWhitespace": {
+						"type": "boolean",
+						"default": true,
+						"markdownDescription": "Blame with `-w`: whitespace-only changes do not count as changing a line.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.blame.detectMoves": {
+						"type": "boolean",
+						"default": false,
+						"markdownDescription": "Blame with `-M -C`: follow lines moved within the file or copied from other files changed in the same commit. Slower.",
 						"scope": "resource"
 					}
 				}

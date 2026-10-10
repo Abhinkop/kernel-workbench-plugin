@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { registerBlame } from './blame';
+import type { BlameAnnotations, BlameView } from './blame';
 import { followSelection } from './clangd';
 import { GitDocuments, SCHEME as GIT_SCHEME } from './commits';
 import { registerHistory } from './history';
@@ -27,6 +29,8 @@ export interface KernelWorkbench {
 	kunit: Kunit;
 	/** The File History view. */
 	history: FileHistory;
+	/** The blame annotations and the Blame view. */
+	blame: { annotations: BlameAnnotations; blameView: BlameView };
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -55,11 +59,12 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 		),
 	);
 	const history = registerHistory(context, settings.root);
+	const blame = registerBlame(context, settings.root);
 	syncContextKeys(context, runner);
 	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
 	registerCommands(context, settings, kbuild, runner, checkTools);
-	return { settings, kbuild, runner, oops, kunit, history, kernelView, checkTools };
+	return { settings, kbuild, runner, oops, kunit, history, blame, kernelView, checkTools };
 }
 
 /** Called by VS Code when the extension is shut down. */

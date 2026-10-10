@@ -128,6 +128,14 @@ Configure, build, run and debug the Linux kernel from VS Code.
   it, or as its message and file list); a commit's right-click menu copies its hash or
   `Fixes:` line, opens the file at that commit, compares it with the previous version, or
   opens its `Link:` on lore.kernel.org.
+- **Kernel: Toggle Blame Annotations** (the editor's menus, the History container's Blame
+  view) shows the hash, date and author before each run of lines from the same commit;
+  unsaved edits stay aligned, and `kernelWorkbench.blame.ignoreWhitespace` (`-w`, on) and
+  `blame.detectMoves` (`-M -C`) shape the blame. Clicking a hash opens the commit; its hover
+  also blames before that commit and copies the `Fixes:` line. The **Blame** view follows the
+  cursor: the commit that last changed the line and, with `git log -L`, every earlier commit
+  that changed it, the bottom one having introduced it; **Blame Before This Commit** reopens
+  the file as of the parent, at the same line.
 
 ## Requirements
 
