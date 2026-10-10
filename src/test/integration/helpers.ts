@@ -65,6 +65,35 @@ export async function child<T>(
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+type Prompt =
+	| 'showInputBox'
+	| 'showQuickPick'
+	| 'showOpenDialog'
+	| 'showWarningMessage'
+	| 'showInformationMessage'
+	| 'showErrorMessage';
+
+/**
+ * Replaces a vscode.window prompt for one test, answering from a queue (a function gets the
+ * items offered); the extension shares this API object with the tests. Call restore() after.
+ */
+export function answer(name: Prompt, answers: unknown[]) {
+	const window = vscode.window as unknown as Record<string, (...args: any[]) => Promise<unknown>>;
+	const original = window[name];
+	const asked: unknown[][] = [];
+	window[name] = async (...args: unknown[]) => {
+		asked.push(args);
+		const next = answers.length ? answers.shift() : undefined;
+		return typeof next === 'function' ? next(await args[0], args) : next;
+	};
+	return {
+		asked,
+		restore: () => {
+			window[name] = original;
+		},
+	};
+}
+
 /** Waits until condition() is truthy, polling; returns the milliseconds it took. */
 export async function until(
 	condition: () => boolean | Promise<boolean>,
