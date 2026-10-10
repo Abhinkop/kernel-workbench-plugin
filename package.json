@@ -329,7 +329,7 @@
 		"test": "vscode-test",
 		"package": "vsce package",
 		"test:unit": "npm run compile && mocha",
-		"test:integration": "npm run compile && mocha --no-config out/test/integration/*.integration.js && vscode-test --label integration",
+		"test:integration": "npm run compile && mocha --no-config out/test/integration/*.integration.js && node out/test/integration/run.js",
 		"test:ui": "npm run compile && node out/test/ui/run.js"
 	},
 	"devDependencies": {

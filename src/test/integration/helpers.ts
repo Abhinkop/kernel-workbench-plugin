@@ -65,5 +65,21 @@ export async function child<T>(
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+/** Waits until condition() is truthy, polling; returns the milliseconds it took. */
+export async function until(
+	condition: () => boolean | Promise<boolean>,
+	timeout = 60000,
+	step = 25,
+): Promise<number> {
+	const start = Date.now();
+	while (!(await condition())) {
+		if (Date.now() - start > timeout) {
+			throw new Error(`timed out after ${timeout} ms`);
+		}
+		await sleep(step);
+	}
+	return Date.now() - start;
+}
+
 /** A file of the kernel tree. */
 export const file = (relative: string) => vscode.Uri.file(path.join(tree(), relative));
