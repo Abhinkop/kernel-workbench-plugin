@@ -213,6 +213,35 @@ describe('Kernel Workbench, clicked through', function () {
 		assert.match(fs.readFileSync(published, 'utf8'), /--target=x86_64-linux-gnu/);
 	});
 
+	it('lists KUnit in the Testing view', async () => {
+		const control = await until(
+			() => new ActivityBar().getViewControl('Testing'),
+			10000,
+			'the Testing view control',
+		);
+		await control.openView();
+		const driver = VSBrowser.instance.driver;
+		const rows = await until(
+			async () => {
+				// The test explorer's rows: a label and, for KUnit before a run, a description.
+				const elements = await driver.findElements(
+					By.css('.test-explorer .monaco-list-row'),
+				);
+				const texts = await Promise.all(elements.map(e => e.getAttribute('textContent')));
+				return texts.some(t => t?.includes('KUnit ('))
+					? texts.map(t => t ?? '')
+					: undefined;
+			},
+			30000,
+			'the KUnit item',
+		);
+		assert.ok(
+			rows.some(r => r.includes('KUnit (x86_64)') && r.includes('run to discover the tests')),
+			rows.join(' | '),
+		);
+		await (await new ActivityBar().getViewControl('Explorer'))?.openView();
+	});
+
 	describe('editor', () => {
 		before(async () => {
 			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
