@@ -2,30 +2,40 @@
   "name": "kernel-dev",
   "displayName": "Kernel Dev: Configure, Build, Run, Debug",
   "description": "Visual Studio-style Configure / Build / Run / Debug for the Linux kernel: a Kernel panel and editor toolbar with arch, Debug/Release and config; QEMU + gdb; clangd set up automatically. No per-workspace files.",
-  "version": "0.0.1",
+  "version": "0.4.0",
+  "publisher": "ajose",
+  "license": "GPL-2.0",
   "engines": {
     "vscode": "^1.140.0"
   },
   "categories": [
+    "Programming Languages",
+    "Debuggers",
     "Other"
   ],
-  "activationEvents": [],
+  "keywords": [
+    "linux",
+    "kernel",
+    "kbuild",
+    "qemu",
+    "gdb",
+    "clangd"
+  ],
   "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "kernel-dev.helloWorld",
-        "title": "Hello World"
-      }
-    ]
-  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "activationEvents": [
+    "workspaceContains:Kbuild"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "test:unit": "npm run compile && node --test out/test/unit/kernelTree.unit.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.140.0",
