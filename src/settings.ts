@@ -134,6 +134,23 @@ class Settings {
 		return args.concat(this.get<string[]>('make.args', []));
 	}
 
+	/**
+	 * make arguments for building a configured tree: the toolchain part
+	 * recorded at Configure (O=, ARCH=, LLVM=, CROSS_COMPILE=, CC=), which the
+	 * .config was made with, and the extra arguments as they are set now, so
+	 * that a change such as W=1 applies to the next Build.
+	 */
+	makeArgs(state: Configured): string[] {
+		const base: string[] = [];
+		for (const arg of state.makeArgs) {
+			if (!/^(O|ARCH|LLVM|CROSS_COMPILE|CC)=/.test(arg)) {
+				break;
+			}
+			base.push(arg);
+		}
+		return base.concat(this.get<string[]>('make.args', []));
+	}
+
 	/** make -j: kernelWorkbench.make.jobs, or the number of CPUs. */
 	jobs(): string {
 		const jobs = this.get('make.jobs', 0);

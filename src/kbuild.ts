@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { archInfo } from './arch';
-import type { Settings } from './settings';
+import type { Configured, Settings } from './settings';
 import { runTask, sq } from './tasks';
 
 /** Runs kbuild on the selected target, as steps in the terminal. */
@@ -92,6 +92,42 @@ export class Kbuild {
 			});
 		}
 		return code;
+	}
+
+	/**
+	 * Build with the arguments recorded by Configure (configuring first if needed), with
+	 * the compiler's errors and warnings in the Problems panel.
+	 */
+	async build(): Promise<number> {
+		let state = this.settings.configured();
+		if (!state) {
+			if ((await this.configure()) !== 0) {
+				return 1;
+			}
+			state = this.settings.configured();
+			if (!state) {
+				return 1;
+			}
+		}
+		const script = [
+			'set -e',
+			this.make(this.settings.makeArgs(state)),
+			`echo "==> ${state.arch} ${state.variant} built"`,
+		].join('\n');
+		return runTask(
+			this.folder,
+			`Build ${state.arch} ${state.variant}`,
+			'bash',
+			['-c', script],
+			{
+				problemMatcher: ['$gcc'],
+			},
+		);
+	}
+
+	/** The kernel image of a configured build. */
+	image(state: Configured): string {
+		return path.join(state.buildDir, archInfo(state.arch).image);
 	}
 }
 

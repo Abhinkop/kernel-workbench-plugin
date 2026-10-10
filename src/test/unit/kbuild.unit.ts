@@ -102,6 +102,53 @@ describe('kbuild', () => {
 		);
 	});
 
+	it('builds with the recorded toolchain and the extra arguments as set now', async () => {
+		const { settings, kbuild, log } = fake();
+		state.config['kernelWorkbench.make.args'] = ['KCFLAGS=-Og'];
+		await kbuild.configure();
+		state.config['kernelWorkbench.make.args'] = ['W=1']; // changed after Configure
+		state.config['kernelWorkbench.toolchain'] = 'llvm'; // needs a new Configure: not used
+		assert.equal(await kbuild.build(), 0);
+		const builds = log()
+			.split('\n')
+			.filter(l => /^make /.test(l) && !/defconfig/.test(l));
+		assert.equal(builds.length, 1, log());
+		assert.match(builds[0], / W=1 /, 'the extra arguments as set now');
+		assert.doesNotMatch(builds[0], /KCFLAGS/);
+		assert.match(builds[0], /CROSS_COMPILE=/, 'the toolchain the .config was made with');
+		assert.doesNotMatch(builds[0], /LLVM=1/);
+		assert.deepEqual(settings.makeArgs(settings.configured()!).slice(-1), ['W=1']);
+	});
+
+	it('configures first when nothing is configured yet', async () => {
+		const { settings, kbuild, log } = fake();
+		assert.equal(settings.configured(), undefined);
+		assert.equal(await kbuild.build(), 0);
+		const makes = log()
+			.split('\n')
+			.filter(l => /^make /.test(l));
+		assert.match(makes[0], /defconfig/);
+		assert.match(makes[makes.length - 1], /-j\d+$/, 'then the build');
+		assert.ok(settings.configured());
+	});
+
+	it('keeps the terminal of a build that failed', async () => {
+		const { settings, kbuild } = fake();
+		await kbuild.configure();
+		state.config['kernelWorkbench.make.args'] = ['kwb-fail'];
+		assert.notEqual(await kbuild.build(), 0);
+		assert.deepEqual(
+			vscode.window.terminals.map(t => t.name),
+			[`Build ${settings.arch} debug`],
+		);
+	});
+
+	it('knows the kernel image of a build', () => {
+		const { kbuild } = fake();
+		const recorded = { arch: 'arm64', buildDir: '/b' } as any;
+		assert.equal(kbuild.image(recorded), '/b/arch/arm64/boot/Image');
+	});
+
 	it('translates options into scripts/config arguments', () => {
 		assert.deepEqual(
 			scriptsConfigArgs({

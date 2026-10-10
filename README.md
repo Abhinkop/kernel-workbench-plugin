@@ -43,6 +43,9 @@ Configure, build, run and debug the Linux kernel from VS Code.
   `kernelWorkbench.make.jobs`) are recorded in `<build dir>/.kernel-workbench.json`. The
   step runs in a terminal that closes when it succeeds and stays open when it fails
   (`kernelWorkbench.terminal.afterTask`).
+- **Kernel: Build** (F7) builds the configured target with the toolchain arguments recorded
+  at Configure plus `kernelWorkbench.make.args` as set now, configuring first if the target
+  was never configured. The compiler's errors and warnings go to the Problems panel.
 
 ## Requirements
 

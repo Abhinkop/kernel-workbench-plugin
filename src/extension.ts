@@ -43,6 +43,7 @@ function registerCommands(
 		['kernelWorkbench.selectVariant', () => pickVariant(settings)],
 		['kernelWorkbench.selectConfig', () => pickConfig(settings)],
 		['kernelWorkbench.configure', () => kbuild.configure()],
+		['kernelWorkbench.build', () => kbuild.build()],
 	];
 	for (const [id, fn] of commands) {
 		context.subscriptions.push(vscode.commands.registerCommand(id, fn));

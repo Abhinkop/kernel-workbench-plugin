@@ -65,6 +65,12 @@
 				"title": "Configure",
 				"category": "Kernel",
 				"icon": "$(gear)"
+			},
+			{
+				"command": "kernelWorkbench.build",
+				"title": "Build",
+				"category": "Kernel",
+				"icon": "$(tools)"
 			}
 		],
 		"submenus": [
@@ -132,6 +138,10 @@
 				{
 					"command": "kernelWorkbench.configure",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.build",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
@@ -166,6 +176,13 @@
 				}
 			]
 		},
+		"keybindings": [
+			{
+				"command": "kernelWorkbench.build",
+				"key": "f7",
+				"when": "kernelWorkbench.active"
+			}
+		],
 		"configuration": [
 			{
 				"title": "Configure",

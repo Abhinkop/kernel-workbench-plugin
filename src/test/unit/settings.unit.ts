@@ -120,6 +120,25 @@ describe('the make arguments and the recorded configure state', () => {
 		assert.ok(s.makeArgsForConfigure().includes('CROSS_COMPILE='));
 	});
 
+	it('builds with the recorded toolchain and the extra arguments as set now', () => {
+		const s = settings();
+		const recorded = {
+			arch: 'arm64',
+			variant: 'debug' as const,
+			config: 'defconfig',
+			buildDir: '/b',
+			makeArgs: ['O=/b', 'ARCH=arm64', 'CROSS_COMPILE=aarch64-linux-gnu-', 'KCFLAGS=-Og'],
+			configuredAt: 'now',
+		};
+		configure({ 'make.args': ['W=1'], toolchain: 'llvm' });
+		assert.deepEqual(s.makeArgs(recorded), [
+			'O=/b',
+			'ARCH=arm64',
+			'CROSS_COMPILE=aarch64-linux-gnu-',
+			'W=1',
+		]);
+	});
+
 	it('uses all CPUs unless make.jobs is set', () => {
 		const s = settings();
 		assert.equal(s.jobs(), `-j${os.cpus().length}`);

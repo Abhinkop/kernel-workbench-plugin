@@ -45,7 +45,7 @@ describe('the manifest', () => {
 	const submenus = new Set((contributes.submenus ?? []).map((s: any) => s.id));
 	const views: any[] = Object.values(contributes.views ?? {}).flat();
 
-	it('refers only to real commands and submenus from its menus', () => {
+	it('refers only to real commands and submenus from its menus and keybindings', () => {
 		for (const [menu, items] of Object.entries(contributes.menus ?? {})) {
 			for (const item of items as any[]) {
 				const target = item.command ?? item.submenu;
@@ -54,6 +54,12 @@ describe('the manifest', () => {
 					`${menu}: ${target}`,
 				);
 			}
+		}
+		for (const binding of contributes.keybindings ?? []) {
+			assert.ok(
+				commands.has(binding.command),
+				`keybinding ${binding.key}: ${binding.command}`,
+			);
 		}
 	});
 
