@@ -82,7 +82,8 @@ describe('Kernel Workbench, clicked through', function () {
 		}
 		assert.match(await description('Configure'), /^\w+ (Debug|Release) from \S+$/);
 		assert.match(await description('Architecture'), /^(x86_64|arm64|riscv64)/);
-		assert.match(await description('Build'), /^(Debug|Release)$/);
+		// The Steps row named Build comes before the Target row of that name.
+		assert.match(await description('Build'), /^\w+ (Debug|Release) \(not configured yet\)$/);
 		assert.ok((await description('Base config')).length > 0, 'a base config');
 		assert.strictEqual(await description('Configured'), 'not yet');
 	});
@@ -134,6 +135,7 @@ describe('Kernel Workbench, clicked through', function () {
 			15000,
 			'the Configure terminal to close',
 		);
+		assert.match(await description('Build'), /^\w+ (Debug|Release)$/, 'Build no longer warns');
 	});
 
 	describe('editor', () => {
@@ -146,7 +148,7 @@ describe('Kernel Workbench, clicked through', function () {
 			);
 		});
 
-		it('has the Kernel Workbench menu on the toolbar', async () => {
+		it('has the Kernel Workbench menu, Configure and Build on the toolbar', async () => {
 			const titles = await until(
 				async () => {
 					const actions = await new EditorView().getActions();
@@ -156,10 +158,12 @@ describe('Kernel Workbench, clicked through', function () {
 				10000,
 				'the editor toolbar',
 			);
-			assert.ok(
-				titles.some(title => title.startsWith('Kernel Workbench')),
-				`"Kernel Workbench" in ${titles.join(' | ')}`,
-			);
+			for (const title of ['Kernel Workbench', 'Configure', 'Build']) {
+				assert.ok(
+					titles.some(t => t === title || t.startsWith(`${title} (`)),
+					`"${title}" in ${titles.join(' | ')}`,
+				);
+			}
 		});
 
 		after(async () => {
