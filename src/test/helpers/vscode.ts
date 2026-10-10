@@ -3,6 +3,7 @@
 // can inspect (prompts shown, settings, commands registered and executed)
 // and answers prompts from a queue (`answer(...)`). setup.ts makes
 // require('vscode') return it and resets it before every test.
+import { spawn } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import type * as vscodeTypes from 'vscode';
@@ -84,6 +85,48 @@ export interface TreeView {
 	dispose(): void;
 }
 
+export const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 } as const;
+export const TaskRevealKind = { Always: 1, Silent: 2, Never: 3 } as const;
+export const TaskPanelKind = { Shared: 1, Dedicated: 2, New: 3 } as const;
+export const TerminalLocation = { Panel: 1, Editor: 2 } as const;
+
+export class ProcessExecution {
+	constructor(
+		readonly process: string,
+		readonly args: string[],
+		readonly options: { cwd?: string; env?: Record<string, string> } = {},
+	) {}
+}
+
+export class Task {
+	presentationOptions: Record<string, unknown> = {};
+	/** Set when the process ends. */
+	exitCode?: number;
+	/** What the process printed. */
+	output = '';
+	constructor(
+		readonly definition: Record<string, unknown>,
+		readonly scope: unknown,
+		readonly name: string,
+		readonly source: string,
+		readonly execution: ProcessExecution,
+		readonly problemMatchers: string[] = [],
+	) {}
+}
+
+/** A terminal the extension created, and what it did with it. */
+export interface Terminal {
+	name: string;
+	options: Record<string, unknown>;
+	shown: boolean;
+	sent: string[];
+	disposed: boolean;
+	exitStatus?: unknown;
+	show(): void;
+	sendText(text: string): void;
+	dispose(): void;
+}
+
 /** A prompt the extension showed: what kind, its message, the items offered. */
 export interface Prompt {
 	kind: 'info' | 'warning' | 'error' | 'quickpick' | 'input' | 'open';
@@ -105,6 +148,12 @@ export const state = {
 	executed: [] as { id: string; args: unknown[] }[],
 	/** Tree views, by 'tree:<view id>'. */
 	providers: {} as Record<string, TreeView>,
+	/** Every terminal created, disposed ones included. */
+	terminals: [] as Terminal[],
+	/** Every task executed. */
+	tasks: [] as Task[],
+	/** executeTask runs the process for real; a number instead is reported as the exit code. */
+	runTasks: true as boolean | number,
 };
 
 function ask(
@@ -135,6 +184,14 @@ const message =
 const onDidChangeConfiguration = new EventEmitter<{
 	affectsConfiguration: (section: string, scope?: unknown) => boolean;
 }>();
+const onDidOpenTerminal = new EventEmitter<Terminal>();
+const onDidCloseTerminal = new EventEmitter<Terminal>();
+interface TaskExecution {
+	task: Task;
+}
+const onDidStartTaskProcess = new EventEmitter<{ execution: TaskExecution; processId: number }>();
+const onDidEndTaskProcess = new EventEmitter<{ execution: TaskExecution; exitCode: number }>();
+const onDidEndTask = new EventEmitter<{ execution: TaskExecution }>();
 
 // Setting defaults, as VS Code takes them from the manifest.
 const DEFAULTS: Record<string, unknown> = {};
@@ -179,6 +236,12 @@ export const vscode = {
 	ThemeIcon,
 	TreeItem,
 	TreeItemCollapsibleState,
+	ConfigurationTarget,
+	ProcessExecution,
+	Task,
+	TaskRevealKind,
+	TaskPanelKind,
+	TerminalLocation,
 
 	workspace: {
 		workspaceFolders: [] as WorkspaceFolder[],
@@ -205,6 +268,73 @@ export const vscode = {
 			state.providers[`tree:${id}`] = view;
 			return view;
 		},
+		get terminals(): Terminal[] {
+			return state.terminals.filter(t => !t.disposed);
+		},
+		createTerminal: (options: { name: string } & Record<string, unknown>) => {
+			const terminal: Terminal = {
+				name: options.name,
+				options,
+				shown: false,
+				sent: [],
+				disposed: false,
+				show() {
+					this.shown = true;
+				},
+				sendText(text: string) {
+					this.sent.push(text);
+				},
+				dispose() {
+					this.disposed = true;
+					onDidCloseTerminal.fire(this);
+				},
+			};
+			state.terminals.push(terminal);
+			onDidOpenTerminal.fire(terminal);
+			return terminal;
+		},
+		onDidOpenTerminal: onDidOpenTerminal.event,
+		onDidCloseTerminal: onDidCloseTerminal.event,
+	},
+
+	tasks: {
+		onDidStartTaskProcess: onDidStartTaskProcess.event,
+		onDidEndTaskProcess: onDidEndTaskProcess.event,
+		onDidEndTask: onDidEndTask.event,
+		taskExecutions: [] as TaskExecution[],
+		/**
+		 * Runs the task's process for real (unless state.runTasks says otherwise), in a
+		 * dedicated terminal named after it, and reports the exit code through the events.
+		 */
+		executeTask: async (task: Task): Promise<TaskExecution> => {
+			const execution: TaskExecution = { task };
+			state.tasks.push(task);
+			// Like VS Code, a dedicated terminal named after the task, reused.
+			if (!vscode.window.terminals.some(t => t.name === task.name)) {
+				vscode.window.createTerminal({ name: task.name });
+			}
+			setImmediate(() => {
+				onDidStartTaskProcess.fire({ execution, processId: 1 });
+				const finish = (code: number) => {
+					task.exitCode = code;
+					onDidEndTaskProcess.fire({ execution, exitCode: code });
+					onDidEndTask.fire({ execution });
+				};
+				if (state.runTasks !== true) {
+					finish(typeof state.runTasks === 'number' ? state.runTasks : 0);
+					return;
+				}
+				const { process: command, args, options } = task.execution;
+				const child = spawn(command, args, {
+					cwd: options.cwd,
+					env: { ...process.env, ...(options.env ?? {}) },
+				});
+				child.stdout.on('data', data => (task.output += data));
+				child.stderr.on('data', data => (task.output += data));
+				child.on('close', code => finish(code ?? 1));
+			});
+			return execution;
+		},
 	},
 
 	commands: {
@@ -228,9 +358,21 @@ export function reset(): void {
 	state.config = {};
 	state.executed = [];
 	state.providers = {};
+	state.terminals = [];
+	state.tasks = [];
+	state.runTasks = true;
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
-	onDidChangeConfiguration.dispose();
+	for (const emitter of [
+		onDidChangeConfiguration,
+		onDidOpenTerminal,
+		onDidCloseTerminal,
+		onDidStartTaskProcess,
+		onDidEndTaskProcess,
+		onDidEndTask,
+	]) {
+		emitter.dispose();
+	}
 }
 
 /** Queue answers for the next prompts (a function gets the items offered). */

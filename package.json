@@ -184,6 +184,20 @@
 						"default": "build/${arch}/${variant}",
 						"markdownDescription": "Build output (`O=`), relative to the kernel tree or absolute. `${arch}` and `${variant}` are substituted.",
 						"scope": "resource"
+					},
+					"kernelWorkbench.terminal.afterTask": {
+						"type": "string",
+						"enum": [
+							"closeOnSuccess",
+							"keep"
+						],
+						"default": "closeOnSuccess",
+						"enumDescriptions": [
+							"Close the terminal when the step succeeds; keep it open when it fails, to read the errors",
+							"Keep the terminal open after every step"
+						],
+						"description": "What happens to the terminal of a step (Configure, Build, Clean, checks, ...) when it finishes. A failed step's terminal always stays open.",
+						"scope": "resource"
 					}
 				}
 			}
