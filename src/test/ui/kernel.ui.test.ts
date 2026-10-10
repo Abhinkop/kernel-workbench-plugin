@@ -5,10 +5,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
 	ActivityBar,
+	BottomBarPanel,
 	By,
 	EditorView,
 	InputBox,
 	Key,
+	MarkerType,
 	TextEditor,
 	VSBrowser,
 	WebDriver,
@@ -266,6 +268,66 @@ describe('Kernel Workbench, clicked through', function () {
 				labels.join(', '),
 			);
 			// The submenu's own entries are checked against the manifest in the unit tests.
+		});
+
+		it('decodes a selected stack trace into a tab', async () => {
+			const traceFile = path.join(tree(), 'kwb-trace.txt');
+			fs.writeFileSync(
+				traceFile,
+				[
+					'[    7.765288] Kernel panic - not syncing: sysrq triggered crash',
+					'[    7.768643]  dump_stack_lvl (lib/dump_stack.c:94)',
+					'[    7.769682]  sysrq_handle_crash (drivers/tty/sysrq.c:154)',
+					'[    7.780000] ---[ end Kernel panic - not syncing ]---',
+					'',
+				].join('\n'),
+			);
+			try {
+				await VSBrowser.instance.openResources(traceFile);
+				await until(
+					async () =>
+						(await new EditorView().getOpenEditorTitles()).includes('kwb-trace.txt'),
+					30000,
+					'the trace to open',
+				);
+				const editor = new TextEditor();
+				const input = await editor.findElement(By.css('.native-edit-context, .inputarea'));
+				await input.sendKeys(Key.chord(Key.CONTROL, 'a'));
+				await new Workbench().executeCommand('Kernel: Decode Stack Trace');
+				const title = await until(
+					async () =>
+						(await new EditorView().getOpenEditorTitles()).find(t =>
+							t.endsWith('.oops'),
+						),
+					30000,
+					'the decoded trace tab',
+				);
+				assert.strictEqual(title, 'Kernel panic - not syncing sysrq triggered crash.oops');
+				// The editor's text is not in the DOM to read; the frames also go to Problems.
+				const problems = await new BottomBarPanel().openProblemsView();
+				const markers = await until(
+					async () => {
+						const rows = await problems.getAllVisibleMarkers(MarkerType.Any);
+						const texts = await Promise.all(rows.map(r => r.getText()));
+						return texts.some(t => t.includes('sysrq_handle_crash'))
+							? texts
+							: undefined;
+					},
+					10000,
+					'the frames in Problems',
+				);
+				assert.ok(
+					markers.some(m => /frame 1: sysrq_handle_crash/.test(m) && /154/.test(m)),
+					markers.join(' | '),
+				);
+				assert.ok(
+					markers.some(m => /frame 0: dump_stack_lvl/.test(m)),
+					markers.join(' | '),
+				);
+				await new BottomBarPanel().toggle(false);
+			} finally {
+				fs.rmSync(traceFile, { force: true });
+			}
 		});
 
 		after(async () => {
