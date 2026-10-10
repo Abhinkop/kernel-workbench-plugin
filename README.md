@@ -136,6 +136,17 @@ Configure, build, run and debug the Linux kernel from VS Code.
   cursor: the commit that last changed the line and, with `git log -L`, every earlier commit
   that changed it, the bottom one having introduced it; **Blame Before This Commit** reopens
   the file as of the parent, at the same line.
+- **Series** (the Kernel Git icon in the Activity Bar): the commits of the current branch on
+  top of its base, which is the one picked with **Pick Series Base…**, else the branch's
+  upstream, else `kernelWorkbench.patches.base` (`origin/master`; a welcome view asks when
+  none exists). **Check Series** runs checkpatch on every commit (`--strict` and an ignore
+  list from Check options) and then W=1, with sparse (`C=2`) and Coccinelle when enabled, on
+  every `.c` file the series touches in the Kernel tab's build; a commit's icon shows its
+  result, its hover the commit-message findings, and the inline action its raw report. The
+  findings go to Problems on the right line of the working tree, mapped through the later
+  changes. **Check Working Changes** checks the uncommitted diff, **Format Changed Lines**
+  runs `git clang-format` against the base, and the series version (for `-vN`) is kept per
+  branch.
 
 ## Requirements
 

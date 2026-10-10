@@ -29,7 +29,8 @@
 		"gdb",
 		"clangd",
 		"kunit",
-		"git"
+		"git",
+		"checkpatch"
 	],
 	"main": "./out/extension.js",
 	"extensionKind": [
@@ -270,6 +271,53 @@
 				"command": "kernelWorkbench.blame.openOnLore",
 				"title": "Open on lore.kernel.org",
 				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.series.refresh",
+				"title": "Refresh Series",
+				"category": "Kernel",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "kernelWorkbench.series.check",
+				"title": "Check Series",
+				"category": "Kernel",
+				"icon": "$(checklist)"
+			},
+			{
+				"command": "kernelWorkbench.series.checkWorking",
+				"title": "Check Working Changes",
+				"category": "Kernel",
+				"icon": "$(checklist)"
+			},
+			{
+				"command": "kernelWorkbench.series.format",
+				"title": "Format Changed Lines",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.series.pickBase",
+				"title": "Pick Series Base…",
+				"category": "Kernel",
+				"icon": "$(edit)"
+			},
+			{
+				"command": "kernelWorkbench.series.nextVersion",
+				"title": "Next Series Version",
+				"category": "Kernel",
+				"icon": "$(add)"
+			},
+			{
+				"command": "kernelWorkbench.series.previousVersion",
+				"title": "Previous Series Version",
+				"category": "Kernel",
+				"icon": "$(remove)"
+			},
+			{
+				"command": "kernelWorkbench.series.report",
+				"title": "Show checkpatch Report",
+				"category": "Kernel",
+				"icon": "$(output)"
 			}
 		],
 		"submenus": [
@@ -503,6 +551,36 @@
 					"command": "kernelWorkbench.blame.toggle",
 					"when": "view == kernelWorkbench.blame",
 					"group": "navigation@1"
+				},
+				{
+					"command": "kernelWorkbench.series.check",
+					"when": "view == kernelWorkbench.series && !kernelWorkbench.seriesBusy",
+					"group": "navigation@1"
+				},
+				{
+					"command": "kernelWorkbench.series.refresh",
+					"when": "view == kernelWorkbench.series",
+					"group": "navigation@9"
+				},
+				{
+					"command": "kernelWorkbench.series.checkWorking",
+					"when": "view == kernelWorkbench.series",
+					"group": "1_check@1"
+				},
+				{
+					"command": "kernelWorkbench.series.format",
+					"when": "view == kernelWorkbench.series",
+					"group": "1_check@2"
+				},
+				{
+					"command": "kernelWorkbench.series.nextVersion",
+					"when": "view == kernelWorkbench.series",
+					"group": "2_series@1"
+				},
+				{
+					"command": "kernelWorkbench.series.pickBase",
+					"when": "view == kernelWorkbench.series",
+					"group": "2_series@2"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -734,6 +812,38 @@
 				{
 					"command": "kernelWorkbench.blame.openOnLore",
 					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.series.refresh",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.check",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.checkWorking",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.format",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.pickBase",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.nextVersion",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.previousVersion",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.report",
+					"when": "false"
 				}
 			],
 			"view/item/context": [
@@ -806,6 +916,51 @@
 					"command": "kernelWorkbench.blame.openOnLore",
 					"when": "view == kernelWorkbench.blame && viewItem == blameCommit",
 					"group": "3_open@1"
+				},
+				{
+					"command": "kernelWorkbench.series.pickBase",
+					"when": "view == kernelWorkbench.series && viewItem == base",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.pickBase",
+					"when": "view == kernelWorkbench.series && viewItem == base",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.nextVersion",
+					"when": "view == kernelWorkbench.series && viewItem == version",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.nextVersion",
+					"when": "view == kernelWorkbench.series && viewItem == version",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.report",
+					"when": "view == kernelWorkbench.series && viewItem == commitChecked",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.report",
+					"when": "view == kernelWorkbench.series && viewItem == commitChecked",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.report",
+					"when": "view == kernelWorkbench.series && viewItem == workingChecked",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.report",
+					"when": "view == kernelWorkbench.series && viewItem == workingChecked",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.checkWorking",
+					"when": "view == kernelWorkbench.series && viewItem == working",
+					"group": "inline"
 				}
 			]
 		},
@@ -815,6 +970,11 @@
 					"id": "kernelWorkbench",
 					"title": "Kernel",
 					"icon": "media/kernel.svg"
+				},
+				{
+					"id": "kernelWorkbenchGit",
+					"title": "Kernel Git",
+					"icon": "media/git.svg"
 				},
 				{
 					"id": "kernelWorkbenchHistory",
@@ -845,8 +1005,44 @@
 					"when": "kernelWorkbench.active",
 					"icon": "media/blame.svg"
 				}
+			],
+			"kernelWorkbenchGit": [
+				{
+					"id": "kernelWorkbench.series",
+					"name": "Series",
+					"when": "kernelWorkbench.active",
+					"icon": "media/series.svg"
+				}
 			]
 		},
+		"viewsWelcome": [
+			{
+				"view": "kernelWorkbench.series",
+				"contents": "No base for the series: the branch has no upstream and the ref in [kernelWorkbench.patches.base](command:workbench.action.openSettings?%5B%22kernelWorkbench.patches.base%22%5D) does not exist in this repository.\n[Pick the Base](command:kernelWorkbench.series.pickBase)",
+				"when": "kernelWorkbench.seriesNoBase"
+			}
+		],
+		"problemMatchers": [
+			{
+				"name": "kernel-coccinelle",
+				"owner": "coccinelle",
+				"source": "coccinelle",
+				"fileLocation": [
+					"relative",
+					"${workspaceFolder}"
+				],
+				"severity": "warning",
+				"pattern": {
+					"regexp": "^([^\\s:]+\\.[ch]):(\\d+):(\\d+)-(\\d+): (?:(ERROR|WARNING|INFO): ?)?(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"endColumn": 4,
+					"severity": 5,
+					"message": 6
+				}
+			}
+		],
 		"keybindings": [
 			{
 				"command": "kernelWorkbench.build",
@@ -1255,6 +1451,39 @@
 						"type": "boolean",
 						"default": false,
 						"markdownDescription": "Blame with `-M -C`: follow lines moved within the file or copied from other files changed in the same commit. Slower.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.patches.base": {
+						"type": "string",
+						"default": "origin/master",
+						"markdownDescription": "Base of a patch series when the branch has no upstream and none was picked in the Series view: the series is the commits since its merge-base with this ref.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.checkpatch.strict": {
+						"type": "boolean",
+						"default": false,
+						"markdownDescription": "Run checkpatch with `--strict` (some subsystems, e.g. networking, expect it).",
+						"scope": "resource"
+					},
+					"kernelWorkbench.checkpatch.ignore": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"markdownDescription": "checkpatch types to ignore (`--ignore`), e.g. `[\"FILE_PATH_CHANGES\"]`.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.check.sparse": {
+						"type": "boolean",
+						"default": false,
+						"markdownDescription": "Also run sparse (`C=2`) on the touched files in Check Series. Needs a sparse recent enough for the kernel.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.check.coccinelle": {
+						"type": "boolean",
+						"default": false,
+						"markdownDescription": "Also run `make coccicheck MODE=report` on the touched directories in Check Series. Needs `coccinelle` and `ocaml-nox`.",
 						"scope": "resource"
 					}
 				}

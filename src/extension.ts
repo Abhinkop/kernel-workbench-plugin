@@ -13,6 +13,8 @@ import type { Kunit } from './kunit';
 import { registerOops } from './oops';
 import type { OopsWatcher } from './oops';
 import { Runner } from './runner';
+import { registerSeries } from './series';
+import type { Series, SeriesTree } from './series';
 import { Settings } from './settings';
 import { registerToolCheck, runInstall } from './toolCheck';
 import { installCommand, missing } from './tools';
@@ -31,6 +33,8 @@ export interface KernelWorkbench {
 	history: FileHistory;
 	/** The blame annotations and the Blame view. */
 	blame: { annotations: BlameAnnotations; blameView: BlameView };
+	/** The Series view: the branch's commits over its base, and their checks. */
+	series: { series: Series; view: SeriesTree };
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -60,11 +64,23 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 	);
 	const history = registerHistory(context, settings.root);
 	const blame = registerBlame(context, settings.root);
+	const series = registerSeries(context, settings);
 	syncContextKeys(context, runner);
 	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
 	registerCommands(context, settings, kbuild, runner, checkTools);
-	return { settings, kbuild, runner, oops, kunit, history, blame, kernelView, checkTools };
+	return {
+		settings,
+		kbuild,
+		runner,
+		oops,
+		kunit,
+		history,
+		blame,
+		series,
+		kernelView,
+		checkTools,
+	};
 }
 
 /** Called by VS Code when the extension is shut down. */
