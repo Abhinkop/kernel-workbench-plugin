@@ -30,7 +30,8 @@
 		"clangd",
 		"kunit",
 		"git",
-		"checkpatch"
+		"checkpatch",
+		"bisect"
 	],
 	"main": "./out/extension.js",
 	"extensionKind": [
@@ -424,6 +425,48 @@
 				"title": "Clear Fetched Series",
 				"category": "Kernel",
 				"icon": "$(clear-all)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.start",
+				"title": "Bisect: Start…",
+				"category": "Kernel",
+				"icon": "$(debug-start)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.run",
+				"title": "Bisect: Run Automatically with a Test Script…",
+				"category": "Kernel",
+				"icon": "$(run-all)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.good",
+				"title": "Bisect: Mark Good",
+				"category": "Kernel",
+				"icon": "$(check)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.bad",
+				"title": "Bisect: Mark Bad",
+				"category": "Kernel",
+				"icon": "$(close)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.skip",
+				"title": "Bisect: Skip Commit",
+				"category": "Kernel",
+				"icon": "$(debug-step-over)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.reset",
+				"title": "Bisect: Reset",
+				"category": "Kernel",
+				"icon": "$(discard)"
+			},
+			{
+				"command": "kernelWorkbench.bisect.copyFixes",
+				"title": "Copy Fixes: Line",
+				"category": "Kernel",
+				"icon": "$(copy)"
 			}
 		],
 		"submenus": [
@@ -777,6 +820,46 @@
 					"command": "kernelWorkbench.apply.clear",
 					"when": "view == kernelWorkbench.apply && kernelWorkbench.applyFetched",
 					"group": "2_series@3"
+				},
+				{
+					"command": "kernelWorkbench.bisect.good",
+					"when": "view == kernelWorkbench.bisect && kernelWorkbench.bisectActive",
+					"group": "navigation@1"
+				},
+				{
+					"command": "kernelWorkbench.bisect.bad",
+					"when": "view == kernelWorkbench.bisect && kernelWorkbench.bisectActive",
+					"group": "navigation@2"
+				},
+				{
+					"command": "kernelWorkbench.bisect.skip",
+					"when": "view == kernelWorkbench.bisect && kernelWorkbench.bisectActive",
+					"group": "navigation@3"
+				},
+				{
+					"command": "kernelWorkbench.bisect.start",
+					"when": "view == kernelWorkbench.bisect && !kernelWorkbench.bisectActive",
+					"group": "navigation@1"
+				},
+				{
+					"command": "kernelWorkbench.build",
+					"when": "view == kernelWorkbench.bisect && kernelWorkbench.bisectActive",
+					"group": "1_step@1"
+				},
+				{
+					"command": "kernelWorkbench.run",
+					"when": "view == kernelWorkbench.bisect && kernelWorkbench.bisectActive",
+					"group": "1_step@2"
+				},
+				{
+					"command": "kernelWorkbench.bisect.run",
+					"when": "view == kernelWorkbench.bisect",
+					"group": "2_bisect@1"
+				},
+				{
+					"command": "kernelWorkbench.bisect.reset",
+					"when": "view == kernelWorkbench.bisect && kernelWorkbench.bisectActive",
+					"group": "2_bisect@2"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -1112,6 +1195,34 @@
 				{
 					"command": "kernelWorkbench.apply.clear",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.start",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.run",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.good",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.bad",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.skip",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.reset",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.bisect.copyFixes",
+					"when": "false"
 				}
 			],
 			"view/item/context": [
@@ -1264,6 +1375,16 @@
 					"command": "kernelWorkbench.series.revealOutput",
 					"when": "view == kernelWorkbench.series && viewItem == generated",
 					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.bisect.copyFixes",
+					"when": "view == kernelWorkbench.bisect && viewItem == result",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.bisect.copyFixes",
+					"when": "view == kernelWorkbench.bisect && viewItem == result",
+					"group": "1_item@1"
 				}
 			]
 		},
@@ -1321,6 +1442,12 @@
 					"name": "Apply",
 					"when": "kernelWorkbench.active",
 					"icon": "media/apply.svg"
+				},
+				{
+					"id": "kernelWorkbench.bisect",
+					"name": "Bisect",
+					"when": "kernelWorkbench.active",
+					"icon": "media/bisect.svg"
 				}
 			]
 		},
@@ -1334,6 +1461,11 @@
 				"view": "kernelWorkbench.apply",
 				"contents": "Fetch a patch series from lore.kernel.org with b4, review it, then apply it with git am.\n[Fetch Series from lore…](command:kernelWorkbench.apply.fetch)\n[Apply mbox or Patch Files…](command:kernelWorkbench.apply.openFiles)",
 				"when": "kernelWorkbench.applyEmpty"
+			},
+			{
+				"view": "kernelWorkbench.bisect",
+				"contents": "Find the commit that introduced a bug with git bisect. Each step can build and boot the kernel selected in the Kernel view.\n[Start Bisect…](command:kernelWorkbench.bisect.start)\n[Bisect Automatically with a Test Script…](command:kernelWorkbench.bisect.run)",
+				"when": "kernelWorkbench.bisectIdle"
 			}
 		],
 		"problemMatchers": [

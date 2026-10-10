@@ -168,6 +168,14 @@ Configure, build, run and debug the Linux kernel from VS Code.
   series' base-commit) runs `git am -3`. If `git am` stops, the view shows the patch and the
   conflicted files, and **Continue** (refused while conflict markers remain), **Skip** and
   **Abort** are in the toolbar.
+- **Bisect** (the Kernel Git tab): **Bisect: Start…** asks for a bad and a good commit; each
+  step shows the commit under test, Build and Run are in the view's menu and **Good / Bad /
+  Skip** in its toolbar, and the state lives in git, so a bisect started on the command line
+  shows up too. **Bisect: Run Automatically with a Test Script…** runs `git bisect run`
+  with a wrapper that builds the kernel selected in the Kernel tab first (a build failure
+  skips the commit) and then the script, which gets the build directory and answers good
+  (0) or bad (1). The first bad commit is shown, opens in a tab, and has **Copy Fixes:
+  Line**.
 
 ## Requirements
 
