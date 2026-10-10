@@ -4,6 +4,7 @@ import * as path from 'path';
 import { archInfo } from './arch';
 import type { Configured, Settings } from './settings';
 import { runTask, sq } from './tasks';
+import { buildRequirements, describe, installCommand } from './tools';
 
 /** Runs kbuild on the selected target, as steps in the terminal. */
 export class Kbuild {
@@ -29,6 +30,9 @@ export class Kbuild {
 		const settings = this.settings;
 		const { arch, variant, config } = settings;
 		const makeArgs = settings.makeArgsForConfigure();
+		if (!this.checkTools(makeArgs, arch)) {
+			return 1;
+		}
 		const out = settings.buildDir();
 		const dotconfig = path.join(out, '.config');
 		const base = path.resolve(this.root, config);
@@ -109,6 +113,9 @@ export class Kbuild {
 				return 1;
 			}
 		}
+		if (!this.checkTools(this.settings.makeArgs(state), state.arch)) {
+			return 1;
+		}
 		const script = [
 			'set -e',
 			this.make(this.settings.makeArgs(state)),
@@ -174,6 +181,20 @@ export class Kbuild {
 			],
 		});
 		terminal.show();
+	}
+
+	/** Fails early, naming the packages to install, if build tools are missing. */
+	checkTools(makeArgs: string[], arch: string): boolean {
+		const missing = buildRequirements(makeArgs).filter(r => !r.present());
+		if (!missing.length) {
+			return true;
+		}
+		const command = installCommand(missing);
+		vscode.window.showErrorMessage(
+			`Kernel: cannot build ${arch}, missing ${describe(missing)}.` +
+				(command ? ` Install with: ${command}` : ''),
+		);
+		return false;
 	}
 
 	/** The kernel image of a configured build. */

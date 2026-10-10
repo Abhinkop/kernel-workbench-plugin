@@ -41,10 +41,12 @@ describe('kbuild', () => {
 		]);
 		process.env.PATH = `${bin}:${process.env.PATH}`;
 		const settings = new Settings(extensionContext(), workspaceFolder(root));
+		const kbuild = new Kbuild(settings);
+		kbuild.checkTools = () => true; // the host's tools are not the point here
 		return {
 			root,
 			settings,
-			kbuild: new Kbuild(settings),
+			kbuild,
 			log: () => (fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : ''),
 		};
 	}
@@ -171,6 +173,13 @@ describe('kbuild', () => {
 			/make .* menuconfig \|\| \{ .*read -n1.*exit 1; \}$/,
 			'waits for a key only on failure',
 		);
+	});
+
+	it('refuses to build when tools are missing, naming them', () => {
+		const { settings } = fake();
+		const kbuild = new Kbuild(settings);
+		assert.equal(kbuild.checkTools(['CROSS_COMPILE=no-such-prefix-'], 'arm64'), false);
+		assert.match(String(state.log.pop()?.message), /missing build: no-such-prefix-gcc/);
 	});
 
 	it('knows the kernel image of a build', () => {
