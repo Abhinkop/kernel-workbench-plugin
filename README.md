@@ -91,6 +91,14 @@ Configure, build, run and debug the Linux kernel from VS Code.
   build by default), `debug.stopOnEntry` stays at the symbol, and ending the session stops
   QEMU (`debug.stopVmWhenDebuggingEnds`). A Release build has no debug info: Debug offers to
   switch.
+- Other ways to boot: `kernelWorkbench.run.mode: virtme` runs the kernel with
+  [virtme-ng](https://github.com/arighi/virtme-ng) (`vng`) on the host's root file system
+  (Configure applies `kernelWorkbench.configure.virtmeOptions`; `run.virtmeArgs` adds vng
+  arguments; the tool check wants `vng`). `kernelWorkbench.run.shareBuildDir` shares the
+  build directory with the QEMU guest over 9p, read-only, so a freshly built module can be
+  loaded with `insmod` without rebuilding the initramfs: Configure enables the 9p and virtio
+  options, and the VM terminal shows the `mount` command. The tool check also covers QEMU for
+  the architecture, the initramfs set for it, and gdb.
 
 ## Requirements
 

@@ -168,7 +168,8 @@ export class Runner {
 			vscode.window.showErrorMessage(`Kernel: no ${target} kernel image. Build first.`);
 			return undefined;
 		}
-		if (!(await this.checkInitramfs(state))) {
+		const virtme = this.settings.get('run.mode', 'qemu') === 'virtme';
+		if (!virtme && !(await this.checkInitramfs(state))) {
 			return undefined;
 		}
 		return state;
@@ -219,24 +220,47 @@ export class Runner {
 		}
 	}
 
-	/** The QEMU command line that boots the build; `debug`: halted, with a gdbstub. */
+	/** The command line that boots the build, QEMU or vng; `debug`: halted, with a gdbstub. */
 	vmCommand(state: Configured, debug = false): { cmd: string; args: string[] } {
 		const settings = this.settings;
 		const info = archInfo(state.arch);
-		const initramfs = this.initramfsPath(state);
 		const port = settings.get('debug.port', 1234);
+		const qemuArgs = settings.get<string[]>('run.qemuArgs', []);
+		const memory = settings.get('run.memory', '2G');
+		const smp = String(settings.get('run.smp', 2));
 		const gdbArgs = debug ? ['-gdb', `tcp:localhost:${port}`, '-S'] : [];
 		const cmdline = [debug ? 'nokaslr' : '', settings.get('run.cmdline', '')]
 			.filter(Boolean)
 			.join(' ');
+
+		if (settings.get('run.mode', 'qemu') === 'virtme') {
+			const args = ['--run', this.kbuild.image(state), '--arch', info.vngArch];
+			args.push('--memory', memory, '--cpus', smp);
+			if (cmdline) {
+				args.push('--append', cmdline);
+			}
+			const qemuOpts = [...qemuArgs, ...gdbArgs];
+			if (qemuOpts.length) {
+				args.push('--qemu-opts', qemuOpts.join(' '));
+			}
+			return { cmd: 'vng', args: args.concat(settings.get<string[]>('run.virtmeArgs', [])) };
+		}
+
+		const initramfs = this.initramfsPath(state);
+		const share = settings.get('run.shareBuildDir', false)
+			? [
+					'-virtfs',
+					`local,path=${state.buildDir},mount_tag=kbuild,security_model=none,readonly=on`,
+				]
+			: [];
 		return {
 			cmd: info.qemu,
 			args: [
 				...(this.useKvm(state.arch) ? info.machineKvm : info.machine),
 				'-smp',
-				String(settings.get('run.smp', 2)),
+				smp,
 				'-m',
-				settings.get('run.memory', '2G'),
+				memory,
 				'-kernel',
 				this.kbuild.image(state),
 				...(initramfs ? ['-initrd', initramfs] : []),
@@ -252,7 +276,8 @@ export class Runner {
 				'-mon',
 				'chardev=kdcon,mode=readline',
 				'-no-reboot',
-				...settings.get<string[]>('run.qemuArgs', []),
+				...share,
+				...qemuArgs,
 				...gdbArgs,
 			],
 		};
@@ -267,6 +292,8 @@ export class Runner {
 	boot(state: Configured, debug = false): void {
 		this.stop();
 		const { cmd, args } = this.vmCommand(state, debug);
+		const virtme = this.settings.get('run.mode', 'qemu') === 'virtme';
+		const shared = !virtme && this.settings.get('run.shareBuildDir', false);
 		// VS Code closes a terminal when its process exits, which would take QEMU's error
 		// with it: a wrapper records the exit code and, on a failure, keeps the terminal
 		// until a key is pressed. A clean exit (poweroff, Ctrl-A X) closes it.
@@ -292,14 +319,21 @@ export class Runner {
 			shellArgs: ['-c', wrapper, 'kernel-vm', cmd, ...args],
 			message:
 				`\x1b[2m$ ${[cmd, ...args].map(sq).join(' ')}\r\n` +
-				`(Ctrl-A X quits QEMU)\x1b[0m\r\n`,
+				`(Ctrl-A X quits QEMU)\x1b[0m\r\n` +
+				(shared
+					? '\x1b[2mBuild directory shared; in the guest: mkdir -p /mnt/kbuild && ' +
+						'mount -t 9p -o trans=virtio,version=9p2000.L kbuild /mnt/kbuild\r\n' +
+						'then e.g. insmod /mnt/kbuild/drivers/.../foo.ko\x1b[0m\r\n'
+					: ''),
 			iconPath: new vscode.ThemeIcon(debug ? 'debug-alt' : 'vm-running'),
 		});
 		this.vm.show();
 		this._onDidChange.fire();
-		const log = this.consoleLog(state);
-		fs.mkdirSync(path.dirname(log), { recursive: true });
-		fs.writeFileSync(log, '');
+		if (!virtme) {
+			const log = this.consoleLog(state);
+			fs.mkdirSync(path.dirname(log), { recursive: true });
+			fs.writeFileSync(log, '');
+		}
 	}
 
 	/** The debugger front end: the setting, or the first installed. */

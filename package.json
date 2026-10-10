@@ -615,7 +615,37 @@
 							"BINFMT_ELF": "y",
 							"BINFMT_SCRIPT": "y"
 						},
-						"markdownDescription": "Kconfig options applied at Configure so the kernel can boot in QEMU from an initramfs given in `kernelWorkbench.run.initramfs`.",
+						"markdownDescription": "Kconfig options applied at Configure when `kernelWorkbench.run.mode` is `qemu`, so the kernel can boot from an initramfs given in `kernelWorkbench.run.initramfs`.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.configure.virtmeOptions": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "string"
+						},
+						"default": {
+							"BLK_DEV_INITRD": "y",
+							"DEVTMPFS": "y",
+							"TMPFS": "y",
+							"BINFMT_SCRIPT": "y",
+							"VIRTIO": "y",
+							"VIRTIO_PCI": "y",
+							"VIRTIO_MMIO": "y",
+							"VIRTIO_CONSOLE": "y",
+							"VIRTIO_BLK": "y",
+							"VIRTIO_NET": "y",
+							"SCSI_VIRTIO": "y",
+							"NET_9P": "y",
+							"NET_9P_VIRTIO": "y",
+							"9P_FS": "y",
+							"9P_FS_POSIX_ACL": "y",
+							"FUSE_FS": "y",
+							"VIRTIO_FS": "y",
+							"OVERLAY_FS": "y",
+							"UNIX": "y",
+							"INET": "y"
+						},
+						"markdownDescription": "Kconfig options needed by virtme-ng (applied at Configure when `kernelWorkbench.run.mode` is `virtme`).",
 						"scope": "resource"
 					}
 				}
@@ -697,6 +727,20 @@
 				"title": "Run",
 				"order": 3,
 				"properties": {
+					"kernelWorkbench.run.mode": {
+						"type": "string",
+						"enum": [
+							"qemu",
+							"virtme"
+						],
+						"default": "qemu",
+						"markdownEnumDescriptions": [
+							"QEMU, with the initramfs from `kernelWorkbench.run.initramfs` if one is set",
+							"virtme-ng (`vng`), booting the host root filesystem"
+						],
+						"description": "How Run and Debug boot the kernel.",
+						"scope": "resource"
+					},
 					"kernelWorkbench.run.initramfs": {
 						"type": "object",
 						"additionalProperties": {
@@ -743,6 +787,21 @@
 						},
 						"default": [],
 						"markdownDescription": "Extra QEMU arguments, e.g. `[\"-device\", \"virtio-rng-pci\"]`.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.virtmeArgs": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Extra vng arguments (virtme mode).",
+						"scope": "resource"
+					},
+					"kernelWorkbench.run.shareBuildDir": {
+						"type": "boolean",
+						"default": false,
+						"markdownDescription": "Share the build directory with the QEMU guest over 9p (read-only), so freshly built modules can be loaded with `insmod` without rebuilding the initramfs. Configure then enables the 9p and virtio options; Run shows the `mount` command for the guest.",
 						"scope": "resource"
 					},
 					"kernelWorkbench.buildBeforeRun": {

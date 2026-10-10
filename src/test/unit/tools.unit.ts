@@ -3,7 +3,17 @@ import * as assert from 'node:assert/strict';
 import { extensionContext, state, workspaceFolder } from '../helpers/vscode';
 import { tempDir } from '../helpers/repo';
 import { Settings } from '../../settings';
-import { buildRequirements, describe as say, installCommand, missing, onPath } from '../../tools';
+import { ARCHES, archInfo, isNative } from '../../arch';
+import {
+	aptKnows,
+	buildRequirements,
+	describe as say,
+	installCommand,
+	missing,
+	onPath,
+	qemuPackage,
+	requirements,
+} from '../../tools';
 
 describe('tools', () => {
 	const names = (makeArgs: string[]) => buildRequirements(makeArgs).map(r => r.what);
@@ -56,6 +66,37 @@ describe('tools', () => {
 		});
 		assert.ok(missing(settings).some(r => r.what === 'recorded-gcc'));
 		assert.ok(!missing(settings).some(r => r.what === 'no-such-gcc'));
+	});
+
+	it('names the QEMU package for each architecture and distro', () => {
+		aptKnows.set('qemu-system-riscv', true);
+		assert.equal(
+			qemuPackage('riscv64'),
+			'qemu-system-riscv',
+			'split out since QEMU 10 packaging',
+		);
+		aptKnows.set('qemu-system-riscv', false);
+		assert.equal(qemuPackage('riscv64'), 'qemu-system-misc', 'older Debian/Ubuntu');
+		aptKnows.clear();
+		assert.equal(qemuPackage('arm64'), 'qemu-system-arm');
+		assert.equal(qemuPackage('x86_64'), 'qemu-system-x86');
+	});
+
+	it('covers run and debug: QEMU or vng, the initramfs, gdb', () => {
+		const settings = new Settings(extensionContext(), workspaceFolder(tempDir()));
+		let what = requirements(settings).map(r => r.what);
+		assert.ok(what.includes(archInfo(settings.arch).qemu));
+		assert.ok(what.includes(settings.gdbPath()));
+		assert.ok(!what.includes('vng'));
+		state.config['kernelWorkbench.run.mode'] = 'virtme';
+		what = requirements(settings).map(r => r.what);
+		assert.ok(what.includes('vng') && !what.includes(archInfo(settings.arch).qemu));
+		state.config['kernelWorkbench.run.mode'] = 'qemu';
+		state.config['kernelWorkbench.run.initramfs'] = { [settings.arch]: '/no/such/file' };
+		assert.ok(missing(settings).some(r => r.what === 'initramfs /no/such/file'));
+		const cross = Object.keys(ARCHES).find(a => !isNative(a))!;
+		state.config['kernelWorkbench.arch'] = cross;
+		assert.ok(requirements(settings).some(r => r.what === 'gdb-multiarch'));
 	});
 
 	it('finds programs on PATH', () => {

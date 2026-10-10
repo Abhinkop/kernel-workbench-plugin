@@ -21,6 +21,8 @@ export interface ArchInfo {
 	machineKvm: string[];
 	/** console= for the kernel command line */
 	console: string;
+	/** --arch value for virtme-ng */
+	vngArch: string;
 	/** `uname -m` value of a host that can run this natively */
 	hostUname: string;
 }
@@ -35,6 +37,7 @@ const ARCHES: Record<string, ArchInfo> = {
 		machine: ['-M', 'q35', '-cpu', 'max'],
 		machineKvm: ['-M', 'q35', '-cpu', 'host', '-enable-kvm'],
 		console: 'ttyS0',
+		vngArch: 'amd64',
 		hostUname: 'x86_64',
 	},
 	arm64: {
@@ -46,6 +49,7 @@ const ARCHES: Record<string, ArchInfo> = {
 		machine: ['-M', 'virt', '-cpu', 'max'],
 		machineKvm: ['-M', 'virt', '-cpu', 'host', '-enable-kvm'],
 		console: 'ttyAMA0',
+		vngArch: 'arm64',
 		hostUname: 'aarch64',
 	},
 	riscv64: {
@@ -57,6 +61,7 @@ const ARCHES: Record<string, ArchInfo> = {
 		machine: ['-M', 'virt', '-cpu', 'rv64', '-bios', 'default'],
 		machineKvm: ['-M', 'virt', '-cpu', 'host', '-enable-kvm', '-bios', 'default'],
 		console: 'ttyS0',
+		vngArch: 'riscv64',
 		hostUname: 'riscv64',
 	},
 };

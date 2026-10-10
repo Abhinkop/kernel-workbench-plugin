@@ -7,6 +7,18 @@ import type { Configured, Settings } from './settings';
 import { runTask, sq } from './tasks';
 import { buildRequirements, describe, installCommand } from './tools';
 
+// What the guest needs to mount the build directory shared over 9p.
+const SHARE_OPTIONS: Record<string, string> = {
+	NET_9P: 'y',
+	NET_9P_VIRTIO: 'y',
+	'9P_FS': 'y',
+	VIRTIO: 'y',
+	VIRTIO_PCI: 'y',
+	PCI: 'y',
+	MODULES: 'y',
+	MODULE_UNLOAD: 'y',
+};
+
 /** Runs kbuild on the selected target, as steps in the terminal. */
 export class Kbuild {
 	readonly folder: vscode.WorkspaceFolder;
@@ -23,7 +35,7 @@ export class Kbuild {
 	}
 
 	/**
-	 * Configure: base config -> fragments -> QEMU, variant and user options -> olddefconfig.
+	 * Configure: base config -> fragments -> boot, variant and user options -> olddefconfig.
 	 * Records the make arguments so that Build uses the same ones. Afterwards lists the
 	 * options Kconfig refused.
 	 */
@@ -38,8 +50,11 @@ export class Kbuild {
 		const dotconfig = path.join(out, '.config');
 		const base = path.resolve(this.root, config);
 		const options: Record<string, string> = {
-			// What a QEMU boot from an initramfs needs.
-			...settings.get<Record<string, string>>('configure.qemuOptions', {}),
+			// What a boot needs: from an initramfs in QEMU, or the host's root with virtme-ng.
+			...(settings.get('run.mode', 'qemu') === 'virtme'
+				? settings.get<Record<string, string>>('configure.virtmeOptions', {})
+				: settings.get<Record<string, string>>('configure.qemuOptions', {})),
+			...(settings.get('run.shareBuildDir', false) ? SHARE_OPTIONS : {}),
 			...(variant === 'debug'
 				? settings.get<Record<string, string>>('configure.debugOptions', {})
 				: settings.get<Record<string, string>>('configure.releaseOptions', {})),

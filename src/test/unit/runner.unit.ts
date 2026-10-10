@@ -65,6 +65,41 @@ describe('runner', () => {
 		assert.ok(args.join(' ').endsWith('-device virtio-rng-pci'));
 	});
 
+	it('uses virtme-ng in virtme mode', () => {
+		const { runner } = fixture();
+		state.config['kernelWorkbench.run.mode'] = 'virtme';
+		state.config['kernelWorkbench.run.virtmeArgs'] = ['--verbose'];
+		state.config['kernelWorkbench.run.qemuArgs'] = ['-device', 'virtio-rng-pci'];
+		const { cmd, args } = runner.vmCommand(configured('arm64'), true);
+		assert.equal(cmd, 'vng');
+		assert.deepEqual(args.slice(0, 1), ['--run']);
+		assert.ok(args.includes('--arch') && args.includes('arm64'));
+		assert.ok(args.includes('--append') && args.includes('nokaslr'));
+		assert.ok(
+			args
+				.join(' ')
+				.includes('--qemu-opts -device virtio-rng-pci -gdb tcp:localhost:1234 -S'),
+		);
+		assert.equal(args[args.length - 1], '--verbose');
+	});
+
+	it('shares the build directory over 9p, and says how to mount it', () => {
+		const { runner } = fixture();
+		state.config['kernelWorkbench.run.shareBuildDir'] = true;
+		const st = configured('x86_64');
+		const { args } = runner.vmCommand(st);
+		const share =
+			`-virtfs local,path=${st.buildDir},` +
+			'mount_tag=kbuild,security_model=none,readonly=on';
+		assert.ok(args.join(' ').includes(share));
+		runner.boot(st);
+		assert.match(
+			String(state.terminals[0].options.message),
+			/mount -t 9p .* kbuild \/mnt\/kbuild/,
+		);
+		runner.stop();
+	});
+
 	it('reports a missing initramfs instead of booting without it', async () => {
 		const { runner } = fixture();
 		const st = configured('x86_64');

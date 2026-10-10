@@ -71,6 +71,18 @@ describe('kbuild', () => {
 		assert.equal(vscode.window.terminals.length, 0, 'the terminal closed on success');
 	});
 
+	it('configures for virtme-ng, and for the build directory shared over 9p', async () => {
+		const { kbuild, log } = fake();
+		state.config['kernelWorkbench.run.mode'] = 'virtme';
+		assert.equal(await kbuild.configure(), 0);
+		assert.match(log(), /-e VIRTIO_FS/);
+		assert.doesNotMatch(log(), /-e BINFMT_ELF/, 'not the QEMU options');
+		state.config['kernelWorkbench.run.mode'] = 'qemu';
+		state.config['kernelWorkbench.run.shareBuildDir'] = true;
+		assert.equal(await kbuild.configure(), 0);
+		assert.match(log(), /-e BINFMT_ELF .*-e NET_9P_VIRTIO .*-e 9P_FS/);
+	});
+
 	it('uses the Release options and a .config file as the base', async () => {
 		const { settings, kbuild, log, root } = fake();
 		await settings.select('variant', 'release');
