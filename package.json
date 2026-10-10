@@ -318,6 +318,42 @@
 				"title": "Show checkpatch Report",
 				"category": "Kernel",
 				"icon": "$(output)"
+			},
+			{
+				"command": "kernelWorkbench.series.editCover",
+				"title": "Edit Cover Letter",
+				"category": "Kernel",
+				"icon": "$(edit)"
+			},
+			{
+				"command": "kernelWorkbench.series.editPrefix",
+				"title": "Edit Subject Prefix…",
+				"category": "Kernel",
+				"icon": "$(edit)"
+			},
+			{
+				"command": "kernelWorkbench.series.editRecipients",
+				"title": "Edit Recipients",
+				"category": "Kernel",
+				"icon": "$(edit)"
+			},
+			{
+				"command": "kernelWorkbench.series.fillRecipients",
+				"title": "Fill Recipients from get_maintainer.pl",
+				"category": "Kernel",
+				"icon": "$(person-add)"
+			},
+			{
+				"command": "kernelWorkbench.series.generate",
+				"title": "Generate Patches",
+				"category": "Kernel",
+				"icon": "$(package)"
+			},
+			{
+				"command": "kernelWorkbench.series.revealOutput",
+				"title": "Reveal Patches Folder",
+				"category": "Kernel",
+				"icon": "$(folder-opened)"
 			}
 		],
 		"submenus": [
@@ -575,12 +611,37 @@
 				{
 					"command": "kernelWorkbench.series.nextVersion",
 					"when": "view == kernelWorkbench.series",
-					"group": "2_series@1"
+					"group": "2_series@5"
 				},
 				{
 					"command": "kernelWorkbench.series.pickBase",
 					"when": "view == kernelWorkbench.series",
+					"group": "2_series@6"
+				},
+				{
+					"command": "kernelWorkbench.series.generate",
+					"when": "view == kernelWorkbench.series && !kernelWorkbench.seriesNoBase",
+					"group": "navigation@2"
+				},
+				{
+					"command": "kernelWorkbench.series.fillRecipients",
+					"when": "view == kernelWorkbench.series",
+					"group": "2_series@1"
+				},
+				{
+					"command": "kernelWorkbench.series.editRecipients",
+					"when": "view == kernelWorkbench.series",
 					"group": "2_series@2"
+				},
+				{
+					"command": "kernelWorkbench.series.editCover",
+					"when": "view == kernelWorkbench.series",
+					"group": "2_series@3"
+				},
+				{
+					"command": "kernelWorkbench.series.editPrefix",
+					"when": "view == kernelWorkbench.series",
+					"group": "2_series@4"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -844,6 +905,30 @@
 				{
 					"command": "kernelWorkbench.series.report",
 					"when": "false"
+				},
+				{
+					"command": "kernelWorkbench.series.editCover",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.editPrefix",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.editRecipients",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.fillRecipients",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.generate",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.series.revealOutput",
+					"when": "false"
 				}
 			],
 			"view/item/context": [
@@ -960,6 +1045,41 @@
 				{
 					"command": "kernelWorkbench.series.checkWorking",
 					"when": "view == kernelWorkbench.series && viewItem == working",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.editPrefix",
+					"when": "view == kernelWorkbench.series && viewItem == prefix",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.editPrefix",
+					"when": "view == kernelWorkbench.series && viewItem == prefix",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.editCover",
+					"when": "view == kernelWorkbench.series && viewItem == cover",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.editCover",
+					"when": "view == kernelWorkbench.series && viewItem == cover",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.editRecipients",
+					"when": "view == kernelWorkbench.series && viewItem == recipients",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.series.editRecipients",
+					"when": "view == kernelWorkbench.series && viewItem == recipients",
+					"group": "1_item@1"
+				},
+				{
+					"command": "kernelWorkbench.series.revealOutput",
+					"when": "view == kernelWorkbench.series && viewItem == generated",
 					"group": "inline"
 				}
 			]
@@ -1484,6 +1604,12 @@
 						"type": "boolean",
 						"default": false,
 						"markdownDescription": "Also run `make coccicheck MODE=report` on the touched directories in Check Series. Needs `coccinelle` and `ocaml-nox`.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.patches.outputDirectory": {
+						"type": "string",
+						"default": "patches/${branch}/v${version}",
+						"markdownDescription": "Where Generate Patches writes the series, relative to the kernel tree or absolute. `${branch}` and `${version}` are substituted.",
 						"scope": "resource"
 					}
 				}

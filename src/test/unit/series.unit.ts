@@ -123,7 +123,15 @@ describe('series', () => {
 			);
 			assert.deepEqual(
 				view.getChildren().map(i => i.label),
-				['Actions', 'Base', 'Version', 'Commits', 'Working changes', 'Check options'],
+				[
+					'Actions',
+					'Base',
+					'Version',
+					'Commits',
+					'Working changes',
+					'Check options',
+					'Patches',
+				],
 			);
 			const [actions, base] = view.getChildren();
 			assert.deepEqual(
@@ -131,9 +139,12 @@ describe('series', () => {
 				[
 					['Check series', 'kernelWorkbench.series.check'],
 					['Check working changes', 'kernelWorkbench.series.checkWorking'],
+					['Fill recipients', 'kernelWorkbench.series.fillRecipients'],
+					['Generate patches', 'kernelWorkbench.series.generate'],
 				],
 			);
 			assert.equal(base.command?.command, 'kernelWorkbench.series.pickBase', 'a click picks');
+			await view.refresh();
 			assert.equal(view.view?.description, 'topic · v1');
 
 			state.config['kernelWorkbench.patches.base'] = 'no-such-ref';
@@ -141,6 +152,7 @@ describe('series', () => {
 			assert.ok(!series.info.mergeBase);
 			assert.match(String(series.info.error), /does not exist here/);
 			assert.deepEqual(view.getChildren(), [], 'the welcome view shows instead');
+			await view.refresh();
 			const noBase = state.executed.filter(
 				e => e.id === 'setContext' && e.args[0] === 'kernelWorkbench.seriesNoBase',
 			);

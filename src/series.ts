@@ -7,6 +7,7 @@ import type { Report } from './checkpatch';
 import { exists, git, gitStatus, log } from './git';
 import type { Commit } from './git';
 import type { OptionSpec } from './options';
+import { Patches } from './patches';
 import type { Settings } from './settings';
 import { runTask, sq } from './tasks';
 import { onPath } from './tools';
@@ -415,6 +416,8 @@ export function statusIcon(report: Report | undefined | null): {
 /** What a click on a value row opens. */
 const CLICK: Record<string, string> = {
 	base: 'kernelWorkbench.series.pickBase',
+	prefix: 'kernelWorkbench.series.editPrefix',
+	cover: 'kernelWorkbench.series.editCover',
 	edit: 'kernelWorkbench.editItem',
 };
 
@@ -491,13 +494,25 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 	private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
 	readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-	constructor(readonly series: Series) {
+	/** The cover letter, read on refresh. */
+	cover = '';
+
+	constructor(
+		readonly series: Series,
+		readonly patches: Patches,
+	) {
 		series.onDidChange(() => this.refresh());
 		series.settings.onDidChange(() => this.refresh());
 	}
 
-	refresh(): void {
+	async refresh(): Promise<void> {
 		const se = this.series;
+		this.cover = await this.patches.cover();
+		vscode.commands.executeCommand(
+			'setContext',
+			'kernelWorkbench.patchesGenerated',
+			!!this.patches.output,
+		);
 		vscode.commands.executeCommand(
 			'setContext',
 			'kernelWorkbench.seriesNoBase',
@@ -583,12 +598,90 @@ export class SeriesTree implements vscode.TreeDataProvider<SeriesItem> {
 				'edit',
 				'checkpatch on uncommitted changes',
 			),
+			action(
+				'Fill recipients',
+				'kernelWorkbench.series.fillRecipients',
+				'person-add',
+				'To/Cc from get_maintainer.pl',
+			),
+			action(
+				'Generate patches',
+				'kernelWorkbench.series.generate',
+				'package',
+				'git format-patch',
+			),
 		];
 	}
 
-	/** Groups after Check options (none here; the patches add theirs). */
+	/** Groups after Check options. */
 	extraGroups(): SeriesItem[] {
-		return [];
+		return [this.patchesGroup()];
+	}
+
+	/** What Generate patches will use. */
+	patchesGroup(): SeriesItem {
+		const pa = this.patches;
+		const se = this.series;
+		const children: SeriesItem[] = [
+			new SeriesItem('Subject prefix', {
+				description: `[${pa.prefix}]`,
+				icon: 'symbol-string',
+				contextValue: 'prefix',
+			}),
+		];
+		if (se.info.commits.length > 1) {
+			children.push(
+				new SeriesItem('Cover letter', {
+					description: this.cover ? this.cover.split('\n')[0] : 'not written yet',
+					icon: this.cover ? 'mail' : 'warning',
+					color: this.cover ? undefined : 'problemsWarningIcon.foreground',
+					contextValue: 'cover',
+					tooltip:
+						this.cover ||
+						'Stored as the git branch description; git format-patch uses it.',
+				}),
+			);
+		}
+		const addresses = (list: string[]) => list.map(a => new SeriesItem(a, { icon: 'person' }));
+		children.push(
+			new SeriesItem('To', {
+				description: String(pa.to.length),
+				icon: 'mail',
+				contextValue: 'recipients',
+				children: addresses(pa.to),
+				collapsed: true,
+			}),
+			new SeriesItem('Cc', {
+				description: String(pa.cc.length),
+				icon: 'mail',
+				contextValue: 'recipients',
+				children: addresses(pa.cc),
+				collapsed: true,
+			}),
+		);
+		if (pa.output) {
+			const dir = pa.output.dir;
+			children.push(
+				new SeriesItem('Generated', {
+					description: path.relative(se.root, dir),
+					icon: 'package',
+					contextValue: 'generated',
+					children: pa.output.files.map(
+						f =>
+							new SeriesItem(f, {
+								icon: 'mail',
+								id: path.join(dir, f),
+								command: {
+									command: 'vscode.open',
+									title: 'Open',
+									arguments: [vscode.Uri.file(path.join(dir, f))],
+								},
+							}),
+					),
+				}),
+			);
+		}
+		return new SeriesItem('Patches', { icon: 'git-pull-request', children });
 	}
 
 	actionsGroup(): SeriesItem {
@@ -681,9 +774,10 @@ function md(s: string): string {
 export function registerSeries(
 	context: vscode.ExtensionContext,
 	settings: Settings,
-): { series: Series; view: SeriesTree } {
+): { series: Series; patches: Patches; view: SeriesTree } {
 	const series = new Series(context, settings);
-	const tree = new SeriesTree(series);
+	const patches = new Patches(series);
+	const tree = new SeriesTree(series, patches);
 	const view = vscode.window.createTreeView('kernelWorkbench.series', {
 		treeDataProvider: tree,
 	});
@@ -696,6 +790,23 @@ export function registerSeries(
 		['kernelWorkbench.series.pickBase', () => series.pickBase()],
 		['kernelWorkbench.series.nextVersion', () => series.setVersion(series.version + 1)],
 		['kernelWorkbench.series.previousVersion', () => series.setVersion(series.version - 1)],
+		['kernelWorkbench.series.editCover', () => patches.editCover()],
+		['kernelWorkbench.series.editPrefix', () => patches.editPrefix()],
+		['kernelWorkbench.series.editRecipients', () => patches.editRecipients()],
+		[
+			'kernelWorkbench.series.fillRecipients',
+			() => series.withBusy('get_maintainer.pl', () => patches.fillRecipients()),
+		],
+		['kernelWorkbench.series.generate', () => patches.generate()],
+		[
+			'kernelWorkbench.series.revealOutput',
+			() =>
+				patches.output &&
+				vscode.commands.executeCommand(
+					'revealFileInOS',
+					vscode.Uri.file(path.join(patches.output.dir, patches.output.files[0])),
+				),
+		],
 		[
 			'kernelWorkbench.series.report',
 			(item?: SeriesItem) => item?.ref && series.showReport(item.ref),
@@ -710,5 +821,5 @@ export function registerSeries(
 		view.onDidChangeVisibility(() => view.visible && series.refresh()),
 	);
 	series.refresh();
-	return { series, view: tree };
+	return { series, patches, view: tree };
 }

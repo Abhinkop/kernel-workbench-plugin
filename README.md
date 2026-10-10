@@ -147,6 +147,14 @@ Configure, build, run and debug the Linux kernel from VS Code.
   changes. **Check Working Changes** checks the uncommitted diff, **Format Changed Lines**
   runs `git clang-format` against the base, and the series version (for `-vN`) is kept per
   branch.
+- **Generate Patches** (the Series view): `git format-patch -vN --cover-letter --base=…
+--to/--cc … -o patches/<branch>/v<N>` (`kernelWorkbench.patches.outputDirectory`), with
+  the **Subject prefix** (`PATCH`, `PATCH net-next`, `RFC PATCH`, …) and the **Cover letter**,
+  which is stored as the git branch description so it survives regenerating; **Fill
+  Recipients from get_maintainer.pl** puts maintainers and reviewers in To and lists in Cc,
+  and **Edit Recipients** opens them in a tab. If checkpatch reports errors, they are listed
+  and the patches are only generated on _Generate Anyway_; the generated files are listed
+  under the Patches group and open on a click.
 
 ## Requirements
 

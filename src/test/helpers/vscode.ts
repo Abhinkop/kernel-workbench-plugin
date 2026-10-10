@@ -5,6 +5,7 @@
 // require('vscode') return it and resets it before every test.
 import { spawn } from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import type * as vscodeTypes from 'vscode';
 
@@ -773,6 +774,14 @@ export const vscode = {
 	},
 };
 
+/** The events a test can fire, as VS Code would. */
+export const events = {
+	onDidSaveTextDocument,
+	onDidChangeTextDocument,
+	onDidChangeActiveTextEditor,
+	onDidChangeTextEditorSelection,
+};
+
 /** Reset everything between tests. */
 export function reset(): void {
 	state.answers = [];
@@ -841,6 +850,7 @@ export function extensionContext(): vscodeTypes.ExtensionContext {
 	const context = {
 		subscriptions: [] as { dispose(): unknown }[],
 		extensionPath: path.resolve(__dirname, '../../..'),
+		storageUri: Uri.file(fs.mkdtempSync(path.join(os.tmpdir(), 'kwb-storage-'))),
 		workspaceState: memento(),
 		globalState: memento(),
 	};
