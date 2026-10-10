@@ -386,6 +386,26 @@ describe('Kernel Workbench, clicked through', function () {
 		await showExplorer();
 	});
 
+	it('offers the devicetree checks in the command palette', async () => {
+		const input = await new Workbench().openCommandPrompt();
+		await input.setText('>Kernel: DT Check');
+		const picks = await until(
+			async () => {
+				const items = await input.getQuickPicks();
+				const texts = await Promise.all(items.map(i => i.getLabel()));
+				return texts.some(t => t.includes('All dtbs')) ? texts : undefined;
+			},
+			10000,
+			'the DT Check commands',
+		);
+		await input.cancel();
+		assert.ok(picks.includes('Kernel: DT Check: Changed Files'), picks.join(' | '));
+		assert.ok(
+			picks.includes('Kernel: DT Check: All dtbs (make dtbs_check)'),
+			picks.join(' | '),
+		);
+	});
+
 	describe('editor', () => {
 		before(async () => {
 			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
