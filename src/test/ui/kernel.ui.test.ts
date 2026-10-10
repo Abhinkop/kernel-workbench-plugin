@@ -147,6 +147,23 @@ describe('Kernel Workbench, clicked through', function () {
 		}
 	});
 
+	it('clicking an on/off option flips it', async () => {
+		const options = await row('Options');
+		if (!(await options.isExpanded())) {
+			await options.expand();
+		}
+		const before = await description('ccache');
+		await (await row('ccache')).click();
+		await until(
+			async () => (await description('ccache')) !== before,
+			10000,
+			'ccache to change',
+		);
+		await (await row('ccache')).click();
+		await until(async () => (await description('ccache')) === before, 10000, 'ccache back');
+		await options.collapse();
+	});
+
 	it('clicking Configure configures, and its terminal closes when it succeeds', async () => {
 		await (await row('Configure')).click();
 		await until(
