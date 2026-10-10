@@ -280,6 +280,23 @@ describe('Kernel Workbench, clicked through', function () {
 		await (await new ActivityBar().getViewControl('Explorer'))?.click();
 	});
 
+	it('offers the dry run and the send in the command palette', async () => {
+		const input = await new Workbench().openCommandPrompt();
+		await input.setText('>Kernel: Send Patches');
+		const picks = await until(
+			async () => {
+				const items = await input.getQuickPicks();
+				const texts = await Promise.all(items.map(i => i.getLabel()));
+				return texts.some(t => t.includes('Dry Run')) ? texts : undefined;
+			},
+			10000,
+			'the Send Patches commands',
+		);
+		await input.cancel();
+		assert.ok(picks.includes('Kernel: Send Patches: Dry Run'), picks.join(' | '));
+		assert.ok(picks.includes('Kernel: Send Patches…'), picks.join(' | '));
+	});
+
 	describe('editor', () => {
 		before(async () => {
 			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
