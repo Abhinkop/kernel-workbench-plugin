@@ -1,5 +1,8 @@
 // Helpers for the tests that run inside VS Code with a real kernel tree open.
 import * as vscode from 'vscode';
+import { execFileSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import type { KernelWorkbench } from '../../extension';
 
@@ -112,3 +115,47 @@ export async function until(
 
 /** A file of the kernel tree. */
 export const file = (relative: string) => vscode.Uri.file(path.join(tree(), relative));
+
+/**
+ * A minimal initramfs around the host's static busybox, built with the tree's
+ * usr/gen_init_cpio.c; its init prints KWB-INIT-RAN and starts a shell on the console.
+ * @returns the .cpio
+ */
+export function busyboxInitramfs(): string {
+	const work = fs.mkdtempSync(path.join(os.tmpdir(), 'kwb-initramfs-'));
+	execFileSync('cc', [
+		'-O2',
+		'-o',
+		path.join(work, 'gen_init_cpio'),
+		path.join(tree(), 'usr/gen_init_cpio.c'),
+	]);
+	fs.writeFileSync(
+		path.join(work, 'init'),
+		'#!/bin/busybox sh\n/bin/busybox --install -s\nmount -t proc proc /proc\n' +
+			'mount -t sysfs sysfs /sys\necho KWB-INIT-RAN\nexec sh\n',
+		{ mode: 0o755 },
+	);
+	const list = [
+		'dir /dev 0755 0 0',
+		'nod /dev/console 0600 0 0 c 5 1',
+		'dir /proc 0755 0 0',
+		'dir /sys 0755 0 0',
+		'dir /mnt 0755 0 0',
+		'dir /bin 0755 0 0',
+		'dir /sbin 0755 0 0',
+		'dir /usr 0755 0 0',
+		'dir /usr/bin 0755 0 0',
+		'dir /usr/sbin 0755 0 0',
+		'file /bin/busybox /bin/busybox 0755 0 0',
+		`file /init ${work}/init 0755 0 0`,
+	];
+	fs.writeFileSync(path.join(work, 'list'), list.join('\n'));
+	const cpio = path.join(work, 'initramfs.cpio');
+	fs.writeFileSync(
+		cpio,
+		execFileSync(path.join(work, 'gen_init_cpio'), [path.join(work, 'list')], {
+			maxBuffer: 256 << 20,
+		}),
+	);
+	return cpio;
+}
