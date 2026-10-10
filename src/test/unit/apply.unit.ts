@@ -193,7 +193,10 @@ describe('apply', () => {
 			assert.deepEqual(apply.fetched?.patches, ['[PATCH] foo: fetched']);
 			assert.deepEqual(apply.fetched?.trailers, ['Acked-by: A <a@x.org>']);
 			assert.match(String(apply.fetched?.log), /ARGS -l -s 123@x\.org/);
-			process.env.PATH = '/nonexistent';
+			// A PATH without b4, but still with bash, which the other tests' tools need.
+			const noB4 = tempDir();
+			fs.symlinkSync('/bin/bash', path.join(noB4, 'bash'));
+			process.env.PATH = noB4;
 			await apply.fetch('123@x.org');
 			assert.equal(
 				apply.message,
