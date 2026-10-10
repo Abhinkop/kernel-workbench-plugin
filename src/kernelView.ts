@@ -81,7 +81,7 @@ function action(
 }
 
 /**
- * The Kernel view: the steps (Configure, Build, Run) and the other actions as rows
+ * The Kernel view: the steps (Configure, Build, Run, Debug) and the other actions as rows
  * that run on a click, the
  * target (architecture, Debug/Release, base config) as rows that open their
  * picker, and the state of each step.
@@ -182,6 +182,17 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 							`${target} in QEMU`,
 							`Boot the ${target} kernel in QEMU`,
 						),
+				...(this.runner.running
+					? []
+					: [
+							action(
+								'Debug',
+								'kernelWorkbench.debug',
+								'debug-alt',
+								`${target} in QEMU + gdb`,
+								`Boot the ${target} kernel in QEMU and attach the debugger`,
+							),
+						]),
 			],
 		});
 	}

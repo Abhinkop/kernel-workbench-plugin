@@ -149,6 +149,12 @@
 				"title": "Stop VM",
 				"category": "Kernel",
 				"icon": "$(debug-stop)"
+			},
+			{
+				"command": "kernelWorkbench.debug",
+				"title": "Debug in QEMU",
+				"category": "Kernel",
+				"icon": "$(debug-alt)"
 			}
 		],
 		"submenus": [
@@ -232,6 +238,11 @@
 					"group": "navigation@-7"
 				},
 				{
+					"command": "kernelWorkbench.debug",
+					"when": "kernelWorkbench.active && !kernelWorkbench.vmRunning",
+					"group": "navigation@-6"
+				},
+				{
 					"command": "kernelWorkbench.stop",
 					"when": "kernelWorkbench.active && kernelWorkbench.vmRunning",
 					"group": "navigation@-5"
@@ -252,6 +263,11 @@
 					"command": "kernelWorkbench.run",
 					"when": "view == kernelWorkbench.kernel && !kernelWorkbench.vmRunning",
 					"group": "navigation@3"
+				},
+				{
+					"command": "kernelWorkbench.debug",
+					"when": "view == kernelWorkbench.kernel && !kernelWorkbench.vmRunning",
+					"group": "navigation@4"
 				},
 				{
 					"command": "kernelWorkbench.stop",
@@ -306,6 +322,11 @@
 				{
 					"command": "kernelWorkbench.run",
 					"group": "0_steps@3",
+					"when": "!kernelWorkbench.vmRunning"
+				},
+				{
+					"command": "kernelWorkbench.debug",
+					"group": "0_steps@4",
 					"when": "!kernelWorkbench.vmRunning"
 				},
 				{
@@ -430,6 +451,10 @@
 				{
 					"command": "kernelWorkbench.stop",
 					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.debug",
+					"when": "kernelWorkbench.active"
 				}
 			],
 			"view/item/context": [
@@ -488,6 +513,11 @@
 			{
 				"command": "kernelWorkbench.run",
 				"key": "ctrl+f5",
+				"when": "kernelWorkbench.active && !inDebugMode"
+			},
+			{
+				"command": "kernelWorkbench.debug",
+				"key": "f5",
 				"when": "kernelWorkbench.active && !inDebugMode"
 			}
 		],
@@ -718,7 +748,70 @@
 					"kernelWorkbench.buildBeforeRun": {
 						"type": "boolean",
 						"default": true,
-						"description": "Run an incremental build before Run.",
+						"description": "Run an incremental build before Run and Debug.",
+						"scope": "resource"
+					}
+				}
+			},
+			{
+				"title": "Debug",
+				"order": 4,
+				"properties": {
+					"kernelWorkbench.debug.debugger": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"cppdbg",
+							"gdb",
+							"lldb"
+						],
+						"default": "auto",
+						"markdownEnumDescriptions": [
+							"First installed of the below",
+							"ms-vscode.cpptools (VS Code)",
+							"webfreak.debug, Native Debug (VSCodium)",
+							"CodeLLDB (no lx-* gdb helpers)"
+						],
+						"description": "Debugger front end.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.debug.gdb": {
+						"type": "string",
+						"default": "",
+						"description": "gdb binary. Empty: gdb for the host arch, gdb-multiarch otherwise.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.debug.port": {
+						"type": "integer",
+						"default": 1234,
+						"description": "QEMU gdbstub TCP port.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.debug.breakAt": {
+						"type": "string",
+						"default": "start_kernel",
+						"description": "Run to this symbol (hardware breakpoint) before the debugger attaches, so normal breakpoints work. Empty: attach at reset.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.debug.stopOnEntry": {
+						"type": "boolean",
+						"default": false,
+						"description": "Stay paused at breakAt when the debugger attaches, instead of running to your breakpoints.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.debug.gdbCommands": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"default": [],
+						"description": "Extra gdb commands run when the debugger starts.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.debug.stopVmWhenDebuggingEnds": {
+						"type": "boolean",
+						"default": true,
+						"description": "Kill QEMU when the debug session ends.",
 						"scope": "resource"
 					}
 				}

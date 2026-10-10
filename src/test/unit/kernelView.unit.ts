@@ -66,6 +66,7 @@ describe('the Kernel view', () => {
 					'step',
 				],
 				['Run', `${settings.arch} Debug in QEMU`, 'kernelWorkbench.run', 'step'],
+				['Debug', `${settings.arch} Debug in QEMU + gdb`, 'kernelWorkbench.debug', 'step'],
 			],
 		);
 		assert.deepEqual(labels(kernelView, group(kernelView, 'Target')), [

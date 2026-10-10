@@ -300,6 +300,11 @@ export class Kbuild {
 		return code;
 	}
 
+	/** The vmlinux of a configured build, with the debug info. */
+	vmlinux(state: Configured): string {
+		return path.join(state.buildDir, 'vmlinux');
+	}
+
 	/** The kernel image of a configured build. */
 	image(state: Configured): string {
 		return path.join(state.buildDir, archInfo(state.arch).image);

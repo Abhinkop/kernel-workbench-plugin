@@ -122,6 +122,7 @@ describe('the manifest', () => {
 			'kernelWorkbench.configure',
 			'kernelWorkbench.build',
 			'kernelWorkbench.run',
+			'kernelWorkbench.debug',
 			'kernelWorkbench.stop',
 		];
 
@@ -192,6 +193,7 @@ describe('the manifest', () => {
 			'kernelWorkbench.configure',
 			'kernelWorkbench.build',
 			'kernelWorkbench.run',
+			'kernelWorkbench.debug',
 			'kernelWorkbench.stop',
 		];
 		for (const menu of [

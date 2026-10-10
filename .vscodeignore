@@ -14,5 +14,5 @@ test-fixtures/**
 **/.prettierrc*
 out/test/**
 .github/**
-scripts/**
+scripts/configure-kernel-tree.mjs
 **/.mocharc*

@@ -29,8 +29,8 @@ Configure, build, run and debug the Linux kernel from VS Code.
   shows the tree's architecture (and whether it is a cross build), Debug or Release, and base
   config; click a row, or its **Change…** action, to pick another. Its **Status** group shows
   whether and when the target was configured and built (and which image), whether a VM is
-  running, and the step that is running. Configure, Build and Run are also buttons on the
-  editor toolbar and the Kernel view's toolbar, and in the Kernel Workbench menu.
+  running, and the step that is running. Configure, Build, Run and Debug are also buttons on
+  the editor toolbar and the Kernel view's toolbar, and in the Kernel Workbench menu.
 - A **Kernel Workbench** menu (chip icon) on the toolbar of every editor in a kernel tree,
   with the three Select commands.
 - **Kernel: Configure** configures the selected target into its build directory: the base
@@ -81,6 +81,16 @@ Configure, build, run and debug the Linux kernel from VS Code.
   so an initramfs can boot. The console also goes to `<build dir>/kernel-workbench/console.log`.
   A QEMU that fails keeps its terminal to read; a clean exit (Ctrl-A X) closes it. While the
   VM runs, the Run row and button become **Stop VM**, and Status › VM says so.
+- **Kernel: Debug in QEMU** (F5, the Debug row, the toolbar) boots the kernel halted with a
+  gdbstub (`kernelWorkbench.debug.port`, `nokaslr`), runs it to `kernelWorkbench.debug.breakAt`
+  (`start_kernel`) on a hardware breakpoint with a throwaway gdb, then attaches the debugger
+  front end there (`kernelWorkbench.debug.debugger`: the C/C++ extension, Native Debug or
+  CodeLLDB, whichever is installed; offered for installation otherwise) with an in-memory
+  configuration: `vmlinux`, the kernel's gdb scripts on the safe path, pretty printing and
+  `kernelWorkbench.debug.gdbCommands`. `debug.gdb` picks the gdb (`gdb-multiarch` for a cross
+  build by default), `debug.stopOnEntry` stays at the symbol, and ending the session stops
+  QEMU (`debug.stopVmWhenDebuggingEnds`). A Release build has no debug info: Debug offers to
+  switch.
 
 ## Requirements
 

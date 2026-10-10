@@ -90,6 +90,23 @@ export const TaskRevealKind = { Always: 1, Silent: 2, Never: 3 } as const;
 export const TaskPanelKind = { Shared: 1, Dedicated: 2, New: 3 } as const;
 export const TerminalLocation = { Panel: 1, Editor: 2 } as const;
 export const ViewColumn = { Active: -1, Beside: -2, One: 1 } as const;
+export const ProgressLocation = { SourceControl: 1, Window: 10, Notification: 15 } as const;
+
+export class CancellationTokenSource {
+	private listeners: (() => void)[] = [];
+	token = {
+		isCancellationRequested: false,
+		onCancellationRequested: (listener: () => void) => {
+			this.listeners.push(listener);
+			return { dispose() {} };
+		},
+	};
+	cancel(): void {
+		this.token.isCancellationRequested = true;
+		this.listeners.forEach(l => l());
+	}
+	dispose(): void {}
+}
 
 export class ProcessExecution {
 	constructor(
@@ -161,6 +178,8 @@ export const state = {
 	extensions: {} as Record<string, unknown>,
 	/** Documents shown with window.showTextDocument. */
 	shown: [] as { uri: string; options: unknown }[],
+	/** Debug configurations started with debug.startDebugging. */
+	debugSessions: [] as Record<string, unknown>[],
 };
 
 function ask(
@@ -199,6 +218,7 @@ interface TaskExecution {
 const onDidStartTaskProcess = new EventEmitter<{ execution: TaskExecution; processId: number }>();
 const onDidEndTaskProcess = new EventEmitter<{ execution: TaskExecution; exitCode: number }>();
 const onDidEndTask = new EventEmitter<{ execution: TaskExecution }>();
+const onDidTerminateDebugSession = new EventEmitter<{ configuration: Record<string, unknown> }>();
 
 // Setting defaults, as VS Code takes them from the manifest.
 const DEFAULTS: Record<string, unknown> = {};
@@ -250,6 +270,8 @@ export const vscode = {
 	TaskPanelKind,
 	TerminalLocation,
 	ViewColumn,
+	ProgressLocation,
+	CancellationTokenSource,
 
 	workspace: {
 		workspaceFolders: [] as WorkspaceFolder[],
@@ -276,6 +298,10 @@ export const vscode = {
 			state.providers[`tree:${id}`] = view;
 			return view;
 		},
+		withProgress: async <T>(
+			_options: unknown,
+			task: (progress: { report(v: unknown): void }, token: unknown) => Promise<T>,
+		) => task({ report() {} }, new CancellationTokenSource().token),
 		/** The editor the extension sees as active; tests set it. */
 		activeTextEditor: undefined as { document: { uri: Uri } } | undefined,
 		showTextDocument: async (target: Uri | { uri: Uri }, options?: unknown) => {
@@ -356,6 +382,15 @@ export const vscode = {
 		getExtension: (id: string) => state.extensions[id],
 	},
 
+	debug: {
+		onDidTerminateDebugSession: onDidTerminateDebugSession.event,
+		startDebugging: async (_folder: unknown, configuration: Record<string, unknown>) => {
+			state.debugSessions.push(configuration);
+			return true;
+		},
+		activeDebugSession: undefined,
+	},
+
 	env: {
 		clipboard: {
 			readText: async () => state.clipboard,
@@ -392,6 +427,7 @@ export function reset(): void {
 	state.clipboard = '';
 	state.extensions = {};
 	state.shown = [];
+	state.debugSessions = [];
 	vscode.window.activeTextEditor = undefined;
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
@@ -402,6 +438,7 @@ export function reset(): void {
 		onDidStartTaskProcess,
 		onDidEndTaskProcess,
 		onDidEndTask,
+		onDidTerminateDebugSession,
 	]) {
 		emitter.dispose();
 	}

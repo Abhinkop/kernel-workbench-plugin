@@ -157,6 +157,11 @@ class Settings {
 		return `-j${jobs > 0 ? jobs : os.cpus().length}`;
 	}
 
+	/** The gdb to use: the setting, or gdb for the host architecture, gdb-multiarch otherwise. */
+	gdbPath(): string {
+		return this.get('debug.gdb', '') || (isNative(this.arch) ? 'gdb' : 'gdb-multiarch');
+	}
+
 	// --- recorded configure state -------------------------------------------
 
 	/** What Configure recorded for the current selection, if it has run. */

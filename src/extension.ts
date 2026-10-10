@@ -84,6 +84,7 @@ function registerCommands(
 		['kernelWorkbench.buildModules', () => kbuild.buildModules()],
 		['kernelWorkbench.buildDirectory', (uri?: vscode.Uri) => kbuild.buildDirectory(uri)],
 		['kernelWorkbench.run', () => runner.run()],
+		['kernelWorkbench.debug', () => runner.debug()],
 		['kernelWorkbench.stop', () => runner.stop()],
 		['kernelWorkbench.checkTools', () => checkTools(true)],
 		[

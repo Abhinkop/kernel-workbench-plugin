@@ -32,6 +32,7 @@ describe('Configure in VS Code', function () {
 			'Configure — x86_64 Debug from defconfig',
 			'Build — x86_64 Debug (not configured yet)',
 			'Run — x86_64 Debug in QEMU',
+			'Debug — x86_64 Debug in QEMU + gdb',
 		]);
 		assert.deepStrictEqual((await status()).slice(0, 2), [
 			'Configured — not yet',
