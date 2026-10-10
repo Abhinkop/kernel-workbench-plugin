@@ -61,7 +61,35 @@
 				"icon": "$(edit)"
 			}
 		],
+		"submenus": [
+			{
+				"id": "kernelWorkbench.target",
+				"label": "Kernel Workbench",
+				"icon": "$(chip)"
+			}
+		],
 		"menus": {
+			"editor/title": [
+				{
+					"submenu": "kernelWorkbench.target",
+					"when": "kernelWorkbench.active",
+					"group": "navigation@-10"
+				}
+			],
+			"kernelWorkbench.target": [
+				{
+					"command": "kernelWorkbench.selectArch",
+					"group": "1_target@1"
+				},
+				{
+					"command": "kernelWorkbench.selectVariant",
+					"group": "1_target@2"
+				},
+				{
+					"command": "kernelWorkbench.selectConfig",
+					"group": "1_target@3"
+				}
+			],
 			"commandPalette": [
 				{
 					"command": "kernelWorkbench.selectArch",

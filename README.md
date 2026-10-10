@@ -25,6 +25,8 @@ Configure, build, run and debug the Linux kernel from VS Code.
 - A **Kernel** tab in the activity bar. Its **Target** group shows the tree's architecture
   (and whether it is a cross build), Debug or Release, and base config; click a row, or its
   **Change…** action, to pick another.
+- A **Kernel Workbench** menu (chip icon) on the toolbar of every editor in a kernel tree,
+  with the three Select commands.
 
 ## Requirements
 

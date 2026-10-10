@@ -81,6 +81,35 @@ describe('the manifest', () => {
 		}
 	});
 
+	describe('menus', () => {
+		const menus = contributes.menus ?? {};
+
+		it('puts the Kernel Workbench menu on the toolbar of every kernel editor', () => {
+			const item = (menus['editor/title'] ?? []).find(
+				(m: any) => m.submenu === 'kernelWorkbench.target',
+			);
+			assert.ok(item, 'the submenu on the editor toolbar');
+			assert.match(item.group, /^navigation/, 'a toolbar button, not in the … menu');
+			assert.match(item.when, /^kernelWorkbench\.active/, 'on every editor of the tree');
+			const submenu = (contributes.submenus ?? []).find(
+				(s: any) => s.id === 'kernelWorkbench.target',
+			);
+			assert.equal(submenu?.label, 'Kernel Workbench');
+			assert.ok(submenu?.icon, 'has an icon');
+		});
+
+		it('offers the three Select commands in it', () => {
+			assert.deepEqual(
+				(menus['kernelWorkbench.target'] ?? []).map((m: any) => m.command),
+				[
+					'kernelWorkbench.selectArch',
+					'kernelWorkbench.selectVariant',
+					'kernelWorkbench.selectConfig',
+				],
+			);
+		});
+	});
+
 	it('ties every row action to its kind of row', () => {
 		// A command on a row's menu is about that row, never on every row of a view.
 		for (const item of contributes.menus?.['view/item/context'] ?? []) {
