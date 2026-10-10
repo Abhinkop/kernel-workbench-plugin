@@ -1,7 +1,7 @@
 {
 	"name": "kernel-workbench",
 	"displayName": "Kernel Workbench: Configure, Build, Run, Debug",
-	"description": "Visual Studio-style Configure / Build / Run / Debug for the Linux kernel: a Kernel panel and editor toolbar with arch, Debug/Release and config; QEMU + gdb; clangd set up automatically. No per-workspace files.",
+	"description": "Configure, build, run and debug the Linux kernel in QEMU, decode crashes, and prepare, check, send and apply patch series, with file history, blame, bisect, KUnit and devicetree checks.",
 	"version": "0.4.0",
 	"publisher": "ajose",
 	"license": "GPL-2.0-only",

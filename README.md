@@ -1,10 +1,18 @@
 # Kernel Workbench
 
-Configure, build, run and debug the Linux kernel from VS Code.
+Configure, build, run and debug the Linux kernel in QEMU from VS Code, and prepare, check,
+send and apply patch series, with file history, blame, bisect, KUnit and devicetree checks.
 
-> **Early development.** This version detects kernel source trees and lets you pick the build
-> target. The build and QEMU/gdb support described in the extension's summary is not
-> implemented yet.
+| Tab (Activity Bar)     | Views                   | For                                         |
+| ---------------------- | ----------------------- | ------------------------------------------- |
+| **Kernel** (chip icon) | Kernel                  | Configure · Build · Run · Debug, the target |
+| **Kernel Git**         | Series · Apply · Bisect | Patches out, patches in, finding a bug      |
+| **History** (clock)    | File History · Blame    | Where code came from                        |
+
+KUnit tests appear in VS Code's own **Testing** view, kernel crashes and checkpatch, W=1
+and devicetree findings in **Problems**. Nothing is written into `.vscode/`: the options
+are settings (`kernelWorkbench.*`), the picked target is kept per workspace, and the build
+directories are under `build/` in the tree.
 
 ## Features
 
@@ -188,6 +196,23 @@ Configure, build, run and debug the Linux kernel from VS Code.
 - `git` on the `PATH`.
 - A full clone of the kernel. Shallow clones (`git clone --depth 1`) and source unpacked from
   a tarball are not detected, because they do not contain the first mainline commit.
+- The kernel's build tools, QEMU and gdb for the architectures you use; the Kernel tab's Tools
+  row names what is missing for the selected target and offers the install command. On
+  Debian/Ubuntu:
+
+    ```sh
+    sudo apt install build-essential flex bison bc libelf-dev libssl-dev \
+                     qemu-system-x86 qemu-system-arm qemu-system-misc gdb gdb-multiarch
+    sudo apt install gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu   # cross compilers
+    sudo apt install clang lld llvm clangd                          # toolchain=llvm, clangd
+    sudo apt install git-email clang-format ccache b4               # sending, formatting, lore
+    sudo apt install sparse coccinelle ocaml-nox                    # optional checks
+    pip install dtschema yamllint                                   # devicetree checks
+    ```
+
+- [virtme-ng](https://github.com/arighi/virtme-ng) (`vng`) for `kernelWorkbench.run.mode:
+virtme`, and a debugger front end for Debug: the C/C++ extension, Native Debug or
+  CodeLLDB.
 
 ## Development
 
