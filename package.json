@@ -200,7 +200,8 @@
 		"test": "vscode-test",
 		"package": "vsce package",
 		"test:unit": "npm run compile && mocha",
-		"test:integration": "npm run compile && mocha --no-config out/test/integration/*.integration.js && vscode-test --label integration"
+		"test:integration": "npm run compile && mocha --no-config out/test/integration/*.integration.js && vscode-test --label integration",
+		"test:ui": "npm run compile && node out/test/ui/run.js"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
@@ -214,7 +215,8 @@
 		"mocha": "^11.8.0",
 		"prettier": "3.9.9",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.61.1"
+		"typescript-eslint": "^8.61.1",
+		"vscode-extension-tester": "^8.28.1"
 	},
 	"overrides": {
 		"diff": "^8.0.4",
