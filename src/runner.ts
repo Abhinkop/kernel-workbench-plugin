@@ -23,6 +23,8 @@ export class Runner {
 	private readonly _onDidChange = new vscode.EventEmitter<void>();
 	/** Fires when the VM starts or stops. */
 	readonly onDidChange = this._onDidChange.event;
+	/** Called with the console log and the build when a QEMU boot starts. */
+	onBoot: ((log: string, state: Configured) => void) | undefined;
 
 	constructor(
 		context: vscode.ExtensionContext,
@@ -333,6 +335,7 @@ export class Runner {
 			const log = this.consoleLog(state);
 			fs.mkdirSync(path.dirname(log), { recursive: true });
 			fs.writeFileSync(log, '');
+			this.onBoot?.(log, state);
 		}
 	}
 

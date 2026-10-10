@@ -155,6 +155,11 @@
 				"title": "Debug in QEMU",
 				"category": "Kernel",
 				"icon": "$(debug-alt)"
+			},
+			{
+				"command": "kernelWorkbench.oops.decode",
+				"title": "Decode Stack Trace",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -207,6 +212,11 @@
 					"command": "kernelWorkbench.buildDirectory",
 					"when": "kernelWorkbench.active && resourceScheme == file",
 					"group": "1_build@4"
+				},
+				{
+					"command": "kernelWorkbench.oops.decode",
+					"when": "kernelWorkbench.active && editorHasSelection",
+					"group": "3_debug@1"
 				}
 			],
 			"kernelWorkbench.explorerContext": [
@@ -454,6 +464,10 @@
 				},
 				{
 					"command": "kernelWorkbench.debug",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.oops.decode",
 					"when": "kernelWorkbench.active"
 				}
 			],

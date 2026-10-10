@@ -3,6 +3,8 @@ import { followSelection } from './clangd';
 import { Kbuild } from './kbuild';
 import { isKernelTree } from './kernelTree';
 import { KernelView, registerKernelView } from './kernelView';
+import { registerOops } from './oops';
+import type { OopsWatcher } from './oops';
 import { Runner } from './runner';
 import { Settings } from './settings';
 import { registerToolCheck, runInstall } from './toolCheck';
@@ -14,6 +16,8 @@ export interface KernelWorkbench {
 	settings: Settings;
 	kbuild: Kbuild;
 	runner: Runner;
+	/** Watches the VM's console for crashes, and decodes stack traces. */
+	oops: OopsWatcher;
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -32,11 +36,13 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 	const settings = new Settings(context, folder);
 	const kbuild = new Kbuild(settings);
 	const runner = new Runner(context, settings, kbuild);
+	const oops = registerOops(context, settings);
+	runner.onBoot = (log, state) => oops.watch(log, state);
 	syncContextKeys(context, runner);
 	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
 	registerCommands(context, settings, kbuild, runner, checkTools);
-	return { settings, kbuild, runner, kernelView, checkTools };
+	return { settings, kbuild, runner, oops, kernelView, checkTools };
 }
 
 /** Called by VS Code when the extension is shut down. */

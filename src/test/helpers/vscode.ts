@@ -26,6 +26,13 @@ export class EventEmitter<T = void> {
 	}
 }
 
+interface UriParts {
+	scheme?: string;
+	path?: string;
+	query?: string;
+	fragment?: string;
+}
+
 export class Uri {
 	constructor(
 		readonly scheme: string,
@@ -38,6 +45,24 @@ export class Uri {
 	}
 	static file(p: string): Uri {
 		return new Uri('file', path.resolve(p));
+	}
+	static parse(value: string): Uri {
+		const m = /^([a-z][\w+.-]*):([^?#]*)(?:\?([^#]*))?(?:#(.*))?$/i.exec(value);
+		if (!m) {
+			throw new Error(`not a Uri: ${value}`);
+		}
+		return new Uri(m[1], m[2], m[3] ?? '', m[4] ?? '');
+	}
+	static from(parts: UriParts & { scheme: string }): Uri {
+		return new Uri(parts.scheme, parts.path ?? '', parts.query ?? '', parts.fragment ?? '');
+	}
+	with(change: UriParts): Uri {
+		return Uri.from({
+			scheme: change.scheme ?? this.scheme,
+			path: change.path ?? this.path,
+			query: change.query ?? this.query,
+			fragment: change.fragment ?? this.fragment,
+		});
 	}
 	toString(): string {
 		const query = this.query ? `?${this.query}` : '';
@@ -54,6 +79,40 @@ export class ThemeIcon {
 	constructor(
 		readonly id: string,
 		readonly color?: ThemeColor,
+	) {}
+}
+
+export class Position {
+	constructor(
+		readonly line: number,
+		readonly character: number,
+	) {}
+}
+
+export class Range {
+	readonly start: Position;
+	readonly end: Position;
+	constructor(startLine: number, startCharacter: number, endLine: number, endCharacter: number) {
+		this.start = new Position(startLine, startCharacter);
+		this.end = new Position(endLine, endCharacter);
+	}
+}
+
+export const DiagnosticSeverity = { Error: 0, Warning: 1, Information: 2, Hint: 3 } as const;
+
+export class Diagnostic {
+	source?: string;
+	constructor(
+		readonly range: Range,
+		readonly message: string,
+		readonly severity: number = DiagnosticSeverity.Error,
+	) {}
+}
+
+export class DocumentLink {
+	constructor(
+		readonly range: Range,
+		readonly target?: Uri,
 	) {}
 }
 
@@ -180,7 +239,17 @@ export const state = {
 	shown: [] as { uri: string; options: unknown }[],
 	/** Debug configurations started with debug.startDebugging. */
 	debugSessions: [] as Record<string, unknown>[],
+	/** Diagnostics set through languages.createDiagnosticCollection, by '<collection>|<uri>'. */
+	diagnostics: new Map<string, unknown[]>(),
+	/** Text document content providers, by scheme. */
+	contentProviders: {} as Record<string, ContentProvider>,
+	/** Document link providers registered. */
+	linkProviders: [] as unknown[],
 };
+
+interface ContentProvider {
+	provideTextDocumentContent(uri: Uri): string;
+}
 
 function ask(
 	kind: Prompt['kind'],
@@ -272,11 +341,63 @@ export const vscode = {
 	ViewColumn,
 	ProgressLocation,
 	CancellationTokenSource,
+	Position,
+	Range,
+	Diagnostic,
+	DiagnosticSeverity,
+	DocumentLink,
 
 	workspace: {
 		workspaceFolders: [] as WorkspaceFolder[],
 		getConfiguration: (section?: string) => configuration(section),
 		onDidChangeConfiguration: onDidChangeConfiguration.event,
+		registerTextDocumentContentProvider: (scheme: string, provider: ContentProvider) => {
+			state.contentProviders[scheme] = provider;
+			return { dispose: () => delete state.contentProviders[scheme] };
+		},
+		/** A document: a Uri's content from its scheme's provider, or the content given. */
+		openTextDocument: async (target: Uri | { content?: string }) => {
+			const uri = target instanceof Uri ? target : new Uri('untitled', 'Untitled-1');
+			const text =
+				target instanceof Uri
+					? (state.contentProviders[uri.scheme]?.provideTextDocumentContent(uri) ?? '')
+					: (target.content ?? '');
+			const lines = text.split('\n');
+			return {
+				uri,
+				getText: () => text,
+				lineCount: lines.length,
+				lineAt: (i: number) => ({ text: lines[i] }),
+			};
+		},
+	},
+
+	languages: {
+		createDiagnosticCollection: (name: string) => {
+			const key = (uri: Uri) => `${name}|${uri.toString()}`;
+			const clear = () => {
+				for (const k of [...state.diagnostics.keys()]) {
+					if (k.startsWith(`${name}|`)) {
+						state.diagnostics.delete(k);
+					}
+				}
+			};
+			return {
+				name,
+				set: (uri: Uri, list: unknown[]) => void state.diagnostics.set(key(uri), list),
+				delete: (uri: Uri) => void state.diagnostics.delete(key(uri)),
+				clear,
+				dispose: clear,
+			};
+		},
+		registerDocumentLinkProvider: (_selector: unknown, provider: unknown) => {
+			state.linkProviders.push(provider);
+			return {
+				dispose: () => {
+					state.linkProviders = state.linkProviders.filter(p => p !== provider);
+				},
+			};
+		},
 	},
 
 	window: {
@@ -303,7 +424,12 @@ export const vscode = {
 			task: (progress: { report(v: unknown): void }, token: unknown) => Promise<T>,
 		) => task({ report() {} }, new CancellationTokenSource().token),
 		/** The editor the extension sees as active; tests set it. */
-		activeTextEditor: undefined as { document: { uri: Uri } } | undefined,
+		activeTextEditor: undefined as
+			| {
+					document: { uri: Uri; getText?: (range?: unknown) => string };
+					selection?: { isEmpty: boolean };
+			  }
+			| undefined,
 		showTextDocument: async (target: Uri | { uri: Uri }, options?: unknown) => {
 			const uri = 'uri' in target ? target.uri : target;
 			state.shown.push({ uri: uri.toString(), options });
@@ -428,6 +554,9 @@ export function reset(): void {
 	state.extensions = {};
 	state.shown = [];
 	state.debugSessions = [];
+	state.diagnostics.clear();
+	state.contentProviders = {};
+	state.linkProviders = [];
 	vscode.window.activeTextEditor = undefined;
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];

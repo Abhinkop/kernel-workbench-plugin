@@ -104,6 +104,13 @@ Configure, build, run and debug the Linux kernel from VS Code.
   loaded with `insmod` without rebuilding the initramfs: Configure enables the 9p and virtio
   options, and the VM terminal shows the `mount` command. The tool check also covers QEMU for
   the architecture, the initramfs set for it, and gdb.
+- **Kernel: Decode Stack Trace**: while the VM runs in QEMU, its console log is watched, and
+  when an Oops, BUG, WARNING, panic or general protection fault appears a notification names
+  it; **Show Decoded Trace** runs `scripts/decode_stacktrace.sh` against the build's `vmlinux`
+  (with its `LLVM=` and `CROSS_COMPILE=`) and opens a tab where every `file:line` is a link,
+  with the reliable frames (not the `?` ones) in Problems. The command, from the palette or the
+  editor's Kernel Workbench menu with a selection, does the same for a trace you select or
+  copy.
 
 ## Requirements
 
