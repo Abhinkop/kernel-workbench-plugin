@@ -172,6 +172,68 @@ export interface TestRun {
 	output: string;
 }
 
+export class MarkdownString {
+	isTrusted = false;
+	constructor(public value = '') {}
+	appendMarkdown(text: string): this {
+		this.value += text;
+		return this;
+	}
+}
+
+export class Selection extends Range {
+	get anchor(): Position {
+		return this.start;
+	}
+	get active(): Position {
+		return this.end;
+	}
+	get isEmpty(): boolean {
+		return this.start.line === this.end.line && this.start.character === this.end.character;
+	}
+}
+
+/** A minimal TextDocument over a string. */
+export interface TextDocumentLike {
+	uri: Uri;
+	isDirty: boolean;
+	languageId: string;
+	getText(range?: Range): string;
+	readonly lineCount: number;
+	lineAt(line: number): { text: string };
+}
+
+export function textDocument(
+	uri: Uri,
+	text: string,
+	extra: Partial<Pick<TextDocumentLike, 'isDirty' | 'languageId'>> = {},
+): TextDocumentLike {
+	const lines = () => text.split('\n');
+	return {
+		uri,
+		isDirty: false,
+		languageId: 'plaintext',
+		...extra,
+		getText: (range?: Range) =>
+			range
+				? lines()
+						.slice(range.start.line, range.end.line + 1)
+						.join('\n')
+				: text,
+		get lineCount() {
+			return lines().length;
+		},
+		lineAt: (line: number) => ({ text: lines()[line] ?? '' }),
+	};
+}
+
+/** A text editor as the mock shows one. */
+export interface TextEditorLike {
+	document: TextDocumentLike;
+	selection: Selection;
+	options?: unknown;
+}
+
 export const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 } as const;
 
 export class TreeItem {
@@ -197,6 +259,8 @@ export interface TreeView {
 	id: string;
 	provider: unknown;
 	visible: boolean;
+	message?: string;
+	description?: string;
 	dispose(): void;
 }
 
@@ -262,7 +326,7 @@ export interface Terminal {
 
 /** A prompt the extension showed: what kind, its message, the items offered. */
 export interface Prompt {
-	kind: 'info' | 'warning' | 'error' | 'quickpick' | 'input' | 'open';
+	kind: 'info' | 'warning' | 'error' | 'quickpick' | 'input' | 'open' | 'openExternal';
 	message: string | undefined;
 	items: unknown[];
 	options: unknown;
@@ -306,7 +370,7 @@ export const state = {
 };
 
 interface ContentProvider {
-	provideTextDocumentContent(uri: Uri): string;
+	provideTextDocumentContent(uri: Uri): string | Promise<string>;
 }
 
 function ask(
@@ -339,6 +403,7 @@ const onDidChangeConfiguration = new EventEmitter<{
 }>();
 const onDidOpenTerminal = new EventEmitter<Terminal>();
 const onDidCloseTerminal = new EventEmitter<Terminal>();
+const onDidChangeActiveTextEditor = new EventEmitter<TextEditorLike | undefined>();
 interface TaskExecution {
 	task: Task;
 }
@@ -404,6 +469,8 @@ export const vscode = {
 	Diagnostic,
 	DiagnosticSeverity,
 	DocumentLink,
+	MarkdownString,
+	Selection,
 	Location,
 	TestMessage,
 	TestRunRequest,
@@ -417,20 +484,28 @@ export const vscode = {
 			state.contentProviders[scheme] = provider;
 			return { dispose: () => delete state.contentProviders[scheme] };
 		},
-		/** A document: a Uri's content from its scheme's provider, or the content given. */
-		openTextDocument: async (target: Uri | { content?: string }) => {
-			const uri = target instanceof Uri ? target : new Uri('untitled', 'Untitled-1');
-			const text =
-				target instanceof Uri
-					? (state.contentProviders[uri.scheme]?.provideTextDocumentContent(uri) ?? '')
-					: (target.content ?? '');
-			const lines = text.split('\n');
-			return {
-				uri,
-				getText: () => text,
-				lineCount: lines.length,
-				lineAt: (i: number) => ({ text: lines[i] }),
-			};
+		/** A document: a file's text, a Uri's content from its scheme's provider, or the given. */
+		openTextDocument: async (
+			target: Uri | { content?: string; language?: string },
+		): Promise<TextDocumentLike> => {
+			if (!(target instanceof Uri)) {
+				const uri = Uri.from({
+					scheme: 'untitled',
+					path: `/Untitled-${state.shown.length + 1}`,
+				});
+				return textDocument(uri, target.content ?? '', { languageId: target.language });
+			}
+			if (target.scheme === 'file') {
+				const text = fs.existsSync(target.fsPath)
+					? fs.readFileSync(target.fsPath, 'utf8')
+					: '';
+				return textDocument(target, text);
+			}
+			const provider = state.contentProviders[target.scheme];
+			return textDocument(
+				target,
+				provider ? await provider.provideTextDocumentContent(target) : '',
+			);
 		},
 	},
 
@@ -485,17 +560,19 @@ export const vscode = {
 			_options: unknown,
 			task: (progress: { report(v: unknown): void }, token: unknown) => Promise<T>,
 		) => task({ report() {} }, new CancellationTokenSource().token),
-		/** The editor the extension sees as active; tests set it. */
-		activeTextEditor: undefined as
-			| {
-					document: { uri: Uri; getText?: (range?: unknown) => string };
-					selection?: { isEmpty: boolean };
-			  }
-			| undefined,
-		showTextDocument: async (target: Uri | { uri: Uri }, options?: unknown) => {
-			const uri = 'uri' in target ? target.uri : target;
-			state.shown.push({ uri: uri.toString(), options });
-			return { document: { uri } };
+		/** The editor the extension sees as active: the last shown, or what a test set. */
+		activeTextEditor: undefined as TextEditorLike | undefined,
+		showTextDocument: async (target: Uri | TextDocumentLike, options?: unknown) => {
+			const document =
+				target instanceof Uri ? await vscode.workspace.openTextDocument(target) : target;
+			const editor: TextEditorLike = {
+				document,
+				selection: new Selection(0, 0, 0, 0),
+				options,
+			};
+			vscode.window.activeTextEditor = editor;
+			state.shown.push({ uri: document.uri.toString(), options });
+			return editor;
 		},
 		get terminals(): Terminal[] {
 			return state.terminals.filter(t => !t.disposed);
@@ -524,6 +601,8 @@ export const vscode = {
 		},
 		onDidOpenTerminal: onDidOpenTerminal.event,
 		onDidCloseTerminal: onDidCloseTerminal.event,
+		onDidChangeActiveTextEditor: onDidChangeActiveTextEditor.event,
+		tabGroups: { all: [] as unknown[] },
 	},
 
 	tasks: {
@@ -621,6 +700,15 @@ export const vscode = {
 				state.clipboard = text;
 			},
 		},
+		openExternal: async (uri: Uri) => {
+			state.log.push({
+				kind: 'openExternal',
+				message: uri.toString(),
+				items: [],
+				options: undefined,
+			});
+			return true;
+		},
 	},
 
 	commands: {
@@ -662,6 +750,7 @@ export function reset(): void {
 		onDidChangeConfiguration,
 		onDidOpenTerminal,
 		onDidCloseTerminal,
+		onDidChangeActiveTextEditor,
 		onDidStartTaskProcess,
 		onDidEndTaskProcess,
 		onDidEndTask,

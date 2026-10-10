@@ -119,6 +119,15 @@ Configure, build, run and debug the Linux kernel from VS Code.
   and a failure links to its `EXPECTATION FAILED at file:line`. **Run KUnit Tests for This
   Directory** (the Explorer's Kernel Workbench menu, the palette) uses the nearest
   `.kunitconfig`.
+- **File History** (the History icon in the Activity Bar) lists every commit that touched the
+  file in the editor, following renames, 200 at a time with _Load 200 more…_. **Filter
+  History by Message or Author…** searches across the file's old names too, and **Show
+  History of Selected Lines** (the editor's Kernel Workbench menu) runs `git log -L`. Clicking
+  a commit opens it as a read-only `kernel-git:` diff tab whose toolbar switches between the
+  whole commit and this file only (a commit too large for a tab opens as this file's part of
+  it, or as its message and file list); a commit's right-click menu copies its hash or
+  `Fixes:` line, opens the file at that commit, compares it with the previous version, or
+  opens its `Link:` on lore.kernel.org.
 
 ## Requirements
 

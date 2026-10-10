@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 import { followSelection } from './clangd';
+import { GitDocuments, SCHEME as GIT_SCHEME } from './commits';
+import { registerHistory } from './history';
+import type { FileHistory } from './history';
 import { Kbuild } from './kbuild';
 import { isKernelTree } from './kernelTree';
 import { KernelView, registerKernelView } from './kernelView';
@@ -22,6 +25,8 @@ export interface KernelWorkbench {
 	oops: OopsWatcher;
 	/** KUnit in the Testing view. */
 	kunit: Kunit;
+	/** The File History view. */
+	history: FileHistory;
 	kernelView: KernelView;
 	/** The tool check; `always` shows the result even when unchanged. */
 	checkTools: (always: boolean) => Promise<void>;
@@ -43,11 +48,18 @@ export function activate(context: vscode.ExtensionContext): KernelWorkbench | un
 	const oops = registerOops(context, settings);
 	runner.onBoot = (log, state) => oops.watch(log, state);
 	const kunit = registerKunit(context, settings);
+	context.subscriptions.push(
+		vscode.workspace.registerTextDocumentContentProvider(
+			GIT_SCHEME,
+			new GitDocuments(settings.root),
+		),
+	);
+	const history = registerHistory(context, settings.root);
 	syncContextKeys(context, runner);
 	const kernelView = registerKernelView(context, settings, kbuild, runner);
 	const checkTools = registerToolCheck(context, settings, kernelView);
 	registerCommands(context, settings, kbuild, runner, checkTools);
-	return { settings, kbuild, runner, oops, kunit, kernelView, checkTools };
+	return { settings, kbuild, runner, oops, kunit, history, kernelView, checkTools };
 }
 
 /** Called by VS Code when the extension is shut down. */

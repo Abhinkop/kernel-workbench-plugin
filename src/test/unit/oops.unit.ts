@@ -3,7 +3,7 @@
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
-import { extensionContext, state, vscode, workspaceFolder } from '../helpers/vscode';
+import { extensionContext, state, textDocument, vscode, workspaceFolder } from '../helpers/vscode';
 import { fakeGit, kernelTree, tempDir } from '../helpers/repo';
 import { activate } from '../../extension';
 import { decode, frames, OopsWatcher, START } from '../../oops';
@@ -173,8 +173,8 @@ describe('oops', () => {
 			await vscode.commands.executeCommand('kernelWorkbench.oops.decode');
 			assert.match(String(state.shown.pop()?.uri), /^kernel-oops:\/1\//);
 			vscode.window.activeTextEditor = {
-				document: { uri: vscode.Uri.file('/x'), getText: () => 'Oops: 0002 [#1] SMP' },
-				selection: { isEmpty: false },
+				document: textDocument(vscode.Uri.file('/x'), 'Oops: 0002 [#1] SMP'),
+				selection: new vscode.Selection(0, 0, 0, 19),
 			};
 			await vscode.commands.executeCommand('kernelWorkbench.oops.decode');
 			assert.match(
