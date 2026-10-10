@@ -359,6 +359,46 @@ describe('Kernel Workbench, clicked through', function () {
 			}
 		});
 
+		it('shows the open file’s history in the History tab, and opens a commit', async () => {
+			// The last file opened (the trace) is untracked: its history would walk the whole tree.
+			await VSBrowser.instance.openResources(path.join(tree(), 'kernel/sched/core.c'));
+			const control = await until(
+				() => new ActivityBar().getViewControl('History'),
+				10000,
+				'the History view control',
+			);
+			const view = await control.openView();
+			const rows = await until(
+				async () => {
+					const section = (await view
+						.getContent()
+						.getSection('File History')) as CustomTreeSection;
+					const items = await section.getVisibleItems();
+					const texts = await Promise.all(items.map(i => i.getLabel()));
+					return texts.length > 1 && !texts.includes('Loading history…')
+						? texts
+						: undefined;
+				},
+				60000,
+				'the history of core.c',
+			);
+			// The tree is virtualized: only the rendered rows are visible, so no paging row here.
+			assert.ok(rows.length > 3 && rows.every(r => r.trim()), rows.join(' | '));
+			const section = (await view
+				.getContent()
+				.getSection('File History')) as CustomTreeSection;
+			const first = (await section.getVisibleItems())[0];
+			await first.click();
+			const title = await until(
+				async () =>
+					(await new EditorView().getOpenEditorTitles()).find(t => t.endsWith('.diff')),
+				30000,
+				'the commit tab',
+			);
+			assert.match(title, /^[0-9a-f]{12} .*\.diff$/);
+			await (await new ActivityBar().getViewControl('Explorer'))?.openView();
+		});
+
 		after(async () => {
 			await new EditorView().closeAllEditors();
 		});
