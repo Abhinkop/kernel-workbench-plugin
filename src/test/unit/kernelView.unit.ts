@@ -10,6 +10,10 @@ import { activate } from '../../extension';
 import type { Item, KernelView } from '../../kernelView';
 import { runTask } from '../../tasks';
 
+const pkg = JSON.parse(
+	fs.readFileSync(path.join(__dirname, '..', '..', '..', 'package.json'), 'utf8'),
+);
+
 describe('the Kernel view', () => {
 	let git: ReturnType<typeof fakeGit>;
 	beforeEach(() => (git = fakeGit('commit')));
@@ -44,7 +48,7 @@ describe('the Kernel view', () => {
 
 	it('shows the steps, the target and the status', () => {
 		const { kernelView, settings } = open();
-		assert.deepEqual(labels(kernelView), ['Steps', 'Target', 'Status']);
+		assert.deepEqual(labels(kernelView), ['Steps', 'More', 'Target', 'Status']);
 		const steps = kernelView.getChildren(group(kernelView, 'Steps'));
 		assert.deepEqual(
 			steps.map(r => [r.label, r.description, r.command?.command, r.contextValue]),
@@ -72,6 +76,31 @@ describe('the Kernel view', () => {
 			'Configured — not yet',
 			'Built — not yet',
 		]);
+	});
+
+	it('offers the other actions under More, collapsed, as rows that run a command', () => {
+		const { kernelView } = open();
+		const more = group(kernelView, 'More');
+		assert.equal(more.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed);
+		const rows = kernelView.getChildren(more);
+		assert.deepEqual(
+			rows.map(r => [r.label, r.command?.command]),
+			[
+				['menuconfig', 'kernelWorkbench.menuconfig'],
+				['nconfig', 'kernelWorkbench.nconfig'],
+				['Clean', 'kernelWorkbench.clean'],
+				['Rebuild', 'kernelWorkbench.rebuild'],
+				['Full clean', 'kernelWorkbench.mrproper'],
+			],
+		);
+		assert.ok(rows.every(r => r.contextValue === 'step' && r.tooltip));
+		const contributed: string[] = pkg.contributes.commands.map((c: any) => c.command);
+		for (const row of [...rows, ...kernelView.getChildren(group(kernelView, 'Steps'))]) {
+			assert.ok(
+				contributed.includes(row.command!.command),
+				`${row.label} runs a real command`,
+			);
+		}
 	});
 
 	it('shows the picked values, and re-renders when they change', async () => {

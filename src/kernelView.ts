@@ -80,7 +80,7 @@ function action(
 }
 
 /**
- * The Kernel view: the steps (Configure, Build) as rows that run on a click, the
+ * The Kernel view: the steps (Configure, Build) and other actions as rows that run on a click, the
  * target (architecture, Debug/Release, base config) as rows that open their
  * picker, and the state of each step.
  */
@@ -130,7 +130,7 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 		if (item) {
 			return item.children ?? [];
 		}
-		return [this.stepsGroup(), this.targetGroup(), this.statusGroup()];
+		return [this.stepsGroup(), this.moreGroup(), this.targetGroup(), this.statusGroup()];
 	}
 
 	/** The target as the step rows name it: "arm64 Debug". */
@@ -158,6 +158,38 @@ export class KernelView implements vscode.TreeDataProvider<Item> {
 					'kernelWorkbench.build',
 					'tools',
 					configured ? target : `${target} (not configured yet)`,
+				),
+			],
+		});
+	}
+
+	/** The other actions, collapsed: the Steps are what one does most. */
+	moreGroup(): Item {
+		return new Item('More', {
+			icon: 'ellipsis',
+			collapsed: true,
+			children: [
+				action(
+					'menuconfig',
+					'kernelWorkbench.menuconfig',
+					'settings-gear',
+					'',
+					'Run make menuconfig in a terminal',
+				),
+				action(
+					'nconfig',
+					'kernelWorkbench.nconfig',
+					'settings-gear',
+					'',
+					'Run make nconfig in a terminal',
+				),
+				action('Clean', 'kernelWorkbench.clean', 'trash', 'make clean'),
+				action('Rebuild', 'kernelWorkbench.rebuild', 'refresh', 'make clean, then build'),
+				action(
+					'Full clean',
+					'kernelWorkbench.mrproper',
+					'clear-all',
+					'make mrproper (removes .config)',
 				),
 			],
 		});

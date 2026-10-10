@@ -133,6 +133,31 @@
 					"command": "kernelWorkbench.build",
 					"when": "view == kernelWorkbench.kernel",
 					"group": "navigation@2"
+				},
+				{
+					"command": "kernelWorkbench.menuconfig",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "1_config@1"
+				},
+				{
+					"command": "kernelWorkbench.nconfig",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "1_config@2"
+				},
+				{
+					"command": "kernelWorkbench.clean",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "2_clean@1"
+				},
+				{
+					"command": "kernelWorkbench.rebuild",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "2_clean@2"
+				},
+				{
+					"command": "kernelWorkbench.mrproper",
+					"when": "view == kernelWorkbench.kernel",
+					"group": "2_clean@3"
 				}
 			],
 			"kernelWorkbench.target": [
@@ -155,6 +180,22 @@
 				{
 					"command": "kernelWorkbench.selectConfig",
 					"group": "1_target@3"
+				},
+				{
+					"command": "kernelWorkbench.menuconfig",
+					"group": "3_config@2"
+				},
+				{
+					"command": "kernelWorkbench.clean",
+					"group": "4_tools@1"
+				},
+				{
+					"command": "kernelWorkbench.rebuild",
+					"group": "4_tools@2"
+				},
+				{
+					"command": "kernelWorkbench.mrproper",
+					"group": "4_tools@3"
 				}
 			],
 			"commandPalette": [
