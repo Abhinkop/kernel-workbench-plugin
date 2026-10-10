@@ -265,7 +265,16 @@ describe('Kernel Workbench, clicked through', function () {
 			60000,
 			'the Series view',
 		);
-		for (const label of ['Actions', 'Base', 'Version', 'Commits', 'Working changes']) {
+		const expected = [
+			'Actions',
+			'Base',
+			'Version',
+			'Commits',
+			'Working changes',
+			'Patches',
+			'Subject prefix',
+		];
+		for (const label of expected) {
 			assert.ok(rows.includes(label), `"${label}" in ${rows.join(' | ')}`);
 		}
 		await (await new ActivityBar().getViewControl('Explorer'))?.click();
