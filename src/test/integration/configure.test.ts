@@ -17,6 +17,10 @@ describe('Configure in VS Code', function () {
 		await x.settings.select('arch', 'x86_64');
 		await x.settings.select('variant', 'debug');
 		await x.settings.select('config', 'defconfig');
+		// The test files run in no particular order: start from an unconfigured tree.
+		if (x.settings.configured()) {
+			assert.strictEqual(await vscode.commands.executeCommand('kernelWorkbench.mrproper'), 0);
+		}
 	});
 
 	const status = async () => labels(x.kernelView, await child(x.kernelView, 'Status'));
