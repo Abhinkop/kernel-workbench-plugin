@@ -5,8 +5,7 @@ import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
 import { answer, extensionContext, state, vscode, workspaceFolder } from '../helpers/vscode';
-import { makeRepo, tempDir } from '../helpers/repo';
-import type { Repo } from '../helpers/repo';
+import { makeRepo, Repo, tempDir } from '../helpers/repo';
 import { mboxSubjects, messageId, parseB4, registerApply } from '../../apply';
 import { Settings } from '../../settings';
 
@@ -121,6 +120,28 @@ describe('apply', () => {
 			await apply.apply('current');
 			await apply.resolve('abort');
 			assert.equal(r.git('log', '-1', '--format=%s').trim(), 'local a.c');
+		} finally {
+			r.remove();
+		}
+	});
+
+	it('reads the state of a git am in a worktree, whose .git is a file', async () => {
+		const { r, context } = seriesTree();
+		try {
+			const files = patchesFor(r);
+			const wt = path.join(tempDir(), 'wt');
+			r.git('worktree', 'add', '--detach', wt, 'base');
+			assert.ok(fs.statSync(path.join(wt, '.git')).isFile());
+			const w = new Repo(wt);
+			w.commit('local a.c', { 'a.c': 'int local;\n' });
+			const { apply } = registerApply(context, new Settings(context, workspaceFolder(wt)));
+			answer(files);
+			await apply.openFiles();
+			await apply.apply('current');
+			assert.deepEqual(apply.am?.conflicts, ['a.c']);
+			await apply.resolve('abort');
+			assert.equal(apply.am, undefined);
+			assert.equal(w.git('log', '-1', '--format=%s').trim(), 'local a.c');
 		} finally {
 			r.remove();
 		}

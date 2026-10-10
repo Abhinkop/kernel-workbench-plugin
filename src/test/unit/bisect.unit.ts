@@ -56,6 +56,25 @@ describe('bisect', () => {
 		}
 	});
 
+	it('bisects in a worktree, whose .git is a file', async () => {
+		const { r, hashes, context } = bisectRepo();
+		try {
+			const wt = path.join(tempDir(), 'wt');
+			r.git('worktree', 'add', '--detach', wt, hashes[7]);
+			const { bisect } = registerBisect(context, new Settings(context, workspaceFolder(wt)));
+			await bisect.start(hashes[7], hashes[0]);
+			assert.ok(bisect.active && bisect.current, bisect.message);
+			assert.ok(
+				!fs.existsSync(path.join(r.dir, '.git', 'BISECT_LOG')),
+				'the worktree bisects',
+			);
+			await bisect.reset();
+			assert.ok(!bisect.active);
+		} finally {
+			r.remove();
+		}
+	});
+
 	it('runs git bisect run with a build-and-test wrapper', async () => {
 		const { r, hashes, bad, context, settings } = bisectRepo();
 		const bin = tempDir();

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { exists, git, gitStatus } from './git';
+import { exists, git, gitDir, gitStatus } from './git';
 import type { OptionSpec } from './options';
 import type { Settings } from './settings';
 
@@ -69,10 +69,6 @@ export class Apply {
 
 	changed(): void {
 		this._onDidChange.fire();
-	}
-
-	get gitDir(): string {
-		return path.join(this.root, '.git');
 	}
 
 	/** Where fetched and loaded series are kept. */
@@ -242,12 +238,12 @@ export class Apply {
 	}
 
 	async inProgress(): Promise<boolean> {
-		return fs.existsSync(path.join(this.gitDir, 'rebase-apply', 'applying'));
+		return fs.existsSync(path.join(await gitDir(this.root), 'rebase-apply', 'applying'));
 	}
 
 	/** Reads the state of the git am in progress, if any. */
 	async refreshState(): Promise<void> {
-		const dir = path.join(this.gitDir, 'rebase-apply');
+		const dir = path.join(await gitDir(this.root), 'rebase-apply');
 		if (!(await this.inProgress())) {
 			this.am = undefined;
 			this.changed();

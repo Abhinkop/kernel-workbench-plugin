@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { openCommit } from './commits';
-import { exists, fixesLine, git, gitStatus } from './git';
+import { exists, fixesLine, git, gitDir, gitStatus } from './git';
 import type { Settings } from './settings';
 import { runTask, sq } from './tasks';
 
@@ -45,7 +45,7 @@ export class Bisect {
 
 	/** Reads the bisection's state from git. */
 	async refresh(): Promise<void> {
-		this.active = fs.existsSync(path.join(this.root, '.git', 'BISECT_LOG'));
+		this.active = fs.existsSync(path.join(await gitDir(this.root), 'BISECT_LOG'));
 		this.log = [];
 		this.current = undefined;
 		if (this.active) {

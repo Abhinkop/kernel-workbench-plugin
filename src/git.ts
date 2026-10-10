@@ -134,6 +134,11 @@ export async function fixesLine(root: string, rev: string): Promise<string> {
 	return out.trim();
 }
 
+/** The repository's git directory: a worktree's own one, not the .git file that names it. */
+export async function gitDir(root: string): Promise<string> {
+	return (await git(root, ['rev-parse', '--absolute-git-dir'])).trim();
+}
+
 /** Whether `rev` names a commit. */
 export async function exists(root: string, rev: string): Promise<boolean> {
 	const result = await gitStatus(root, ['rev-parse', '--verify', '--quiet', `${rev}^{commit}`]);
