@@ -1,6 +1,7 @@
 // What a user sees and clicks, in a real VS Code window driven by vscode-extension-tester:
 // the Kernel tab's Target rows, their right-click menu and pickers, and the editor toolbar.
 import * as assert from 'assert';
+import * as fs from 'fs';
 import * as path from 'path';
 import {
 	ActivityBar,
@@ -156,6 +157,18 @@ describe('Kernel Workbench, clicked through', function () {
 		}
 		assert.strictEqual(await description('Clean'), 'make clean');
 		await more.collapse();
+	});
+
+	it('points clangd at the selected build from the command palette', async () => {
+		// A database as the build would leave it; the command publishes it at the root.
+		const build = path.join(tree(), 'build', 'x86_64', 'debug');
+		fs.mkdirSync(build, { recursive: true });
+		const db = [{ directory: build, file: 'init/main.c', command: 'gcc -c init/main.c' }];
+		fs.writeFileSync(path.join(build, 'compile_commands.json'), JSON.stringify(db));
+		await new Workbench().executeCommand('Kernel: Point clangd at the Selected Build');
+		const published = path.join(tree(), 'compile_commands.json');
+		await until(() => fs.existsSync(published), 10000, 'compile_commands.json at the root');
+		assert.match(fs.readFileSync(published, 'utf8'), /--target=x86_64-linux-gnu/);
 	});
 
 	describe('editor', () => {
