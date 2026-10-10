@@ -27,7 +27,8 @@
 		"kbuild",
 		"qemu",
 		"gdb",
-		"clangd"
+		"clangd",
+		"kunit"
 	],
 	"main": "./out/extension.js",
 	"extensionKind": [
@@ -160,6 +161,11 @@
 				"command": "kernelWorkbench.oops.decode",
 				"title": "Decode Stack Trace",
 				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.kunit.runDirectory",
+				"title": "Run KUnit Tests for This Directory",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -224,6 +230,11 @@
 					"command": "kernelWorkbench.buildDirectory",
 					"when": "kernelWorkbench.active",
 					"group": "2_build@1"
+				},
+				{
+					"command": "kernelWorkbench.kunit.runDirectory",
+					"when": "kernelWorkbench.active",
+					"group": "2_build@2"
 				}
 			],
 			"editor/title": [
@@ -468,6 +479,10 @@
 				},
 				{
 					"command": "kernelWorkbench.oops.decode",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.kunit.runDirectory",
 					"when": "kernelWorkbench.active"
 				}
 			],
@@ -885,6 +900,24 @@
 						"type": "boolean",
 						"default": true,
 						"description": "Kill QEMU when the debug session ends.",
+						"scope": "resource"
+					}
+				}
+			},
+			{
+				"title": "KUnit",
+				"order": 5,
+				"properties": {
+					"kernelWorkbench.kunit.buildDirectory": {
+						"type": "string",
+						"default": "build/kunit/${arch}",
+						"markdownDescription": "Build directory for `kunit.py`, kept apart from the builds, relative to the kernel tree or absolute. `${arch}` is substituted.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.kunit.kunitconfig": {
+						"type": "string",
+						"default": "",
+						"markdownDescription": "`.kunitconfig` (a file or a directory) for the Testing view's runs, e.g. `lib/kunit` or `kernel/sched`. Empty: kunit.py's default set.",
 						"scope": "resource"
 					}
 				}

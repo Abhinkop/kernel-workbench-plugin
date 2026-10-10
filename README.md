@@ -111,6 +111,14 @@ Configure, build, run and debug the Linux kernel from VS Code.
   with the reliable frames (not the `?` ones) in Problems. The command, from the palette or the
   editor's Kernel Workbench menu with a selection, does the same for a trace you select or
   copy.
+- **KUnit** tests appear in VS Code's Testing view. **Run in QEMU** runs
+  `tools/testing/kunit/kunit.py run` for the selected architecture and toolchain in its own
+  build directory (`kernelWorkbench.kunit.buildDirectory`, `build/kunit/<arch>`) with
+  `kernelWorkbench.kunit.kunitconfig` (`lib/kunit`, say; empty: kunit.py's default set). The
+  suites and cases appear after the first run, a run of one suite keeps the others' results,
+  and a failure links to its `EXPECTATION FAILED at file:line`. **Run KUnit Tests for This
+  Directory** (the Explorer's Kernel Workbench menu, the palette) uses the nearest
+  `.kunitconfig`.
 
 ## Requirements
 

@@ -116,6 +116,62 @@ export class DocumentLink {
 	) {}
 }
 
+export class Location {
+	constructor(
+		readonly uri: Uri,
+		readonly range: Range,
+	) {}
+}
+
+export class TestMessage {
+	location?: Location;
+	constructor(readonly message: string) {}
+}
+
+/** A test item of a controller. */
+export interface TestItem {
+	id: string;
+	label: string;
+	uri?: Uri;
+	description?: string;
+	children: TestItemCollection;
+}
+
+export class TestItemCollection {
+	private map = new Map<string, TestItem>();
+	add(item: TestItem): void {
+		this.map.set(item.id, item);
+	}
+	replace(items: TestItem[]): void {
+		this.map = new Map(items.map(i => [i.id, i]));
+	}
+	get(id: string): TestItem | undefined {
+		return this.map.get(id);
+	}
+	forEach(fn: (item: TestItem, collection: TestItemCollection) => void): void {
+		this.map.forEach(item => fn(item, this));
+	}
+	get size(): number {
+		return this.map.size;
+	}
+}
+
+export class TestRunRequest {
+	constructor(
+		readonly include?: unknown[],
+		readonly exclude?: unknown[],
+	) {}
+}
+
+export const TestRunProfileKind = { Run: 1, Debug: 2, Coverage: 3 } as const;
+
+/** A test run, and what was reported to it: [state, item id, message?]. */
+export interface TestRun {
+	request: TestRunRequest;
+	results: [string, string, unknown?][];
+	output: string;
+}
+
 export const TreeItemCollapsibleState = { None: 0, Collapsed: 1, Expanded: 2 } as const;
 
 export class TreeItem {
@@ -245,6 +301,8 @@ export const state = {
 	contentProviders: {} as Record<string, ContentProvider>,
 	/** Document link providers registered. */
 	linkProviders: [] as unknown[],
+	/** Every test run that ended. */
+	testRuns: [] as TestRun[],
 };
 
 interface ContentProvider {
@@ -346,6 +404,10 @@ export const vscode = {
 	Diagnostic,
 	DiagnosticSeverity,
 	DocumentLink,
+	Location,
+	TestMessage,
+	TestRunRequest,
+	TestRunProfileKind,
 
 	workspace: {
 		workspaceFolders: [] as WorkspaceFolder[],
@@ -504,6 +566,41 @@ export const vscode = {
 		},
 	},
 
+	tests: {
+		createTestController: (id: string, label: string) => ({
+			id,
+			label,
+			items: new TestItemCollection(),
+			profiles: [] as { label: string; kind: number; handler: unknown }[],
+			refreshHandler: undefined as unknown,
+			createRunProfile(label: string, kind: number, handler: unknown) {
+				const profile = { label, kind, handler };
+				this.profiles.push(profile);
+				return profile;
+			},
+			createTestItem: (itemId: string, itemLabel: string, uri?: Uri): TestItem => ({
+				id: itemId,
+				label: itemLabel,
+				uri,
+				children: new TestItemCollection(),
+			}),
+			createTestRun: (request: TestRunRequest) => {
+				const run: TestRun = { request, results: [], output: '' };
+				return {
+					passed: (t: TestItem) => run.results.push(['passed', t.id]),
+					failed: (t: TestItem, m: unknown) => run.results.push(['failed', t.id, m]),
+					skipped: (t: TestItem) => run.results.push(['skipped', t.id]),
+					errored: (t: TestItem, m: unknown) => run.results.push(['errored', t.id, m]),
+					started() {},
+					enqueued() {},
+					appendOutput: (s: string) => (run.output += s),
+					end: () => state.testRuns.push(run),
+				};
+			},
+			dispose() {},
+		}),
+	},
+
 	extensions: {
 		getExtension: (id: string) => state.extensions[id],
 	},
@@ -557,6 +654,7 @@ export function reset(): void {
 	state.diagnostics.clear();
 	state.contentProviders = {};
 	state.linkProviders = [];
+	state.testRuns = [];
 	vscode.window.activeTextEditor = undefined;
 	state.commands.clear();
 	vscode.workspace.workspaceFolders = [];
