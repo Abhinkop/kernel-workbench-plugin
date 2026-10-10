@@ -1,4 +1,4 @@
-import type * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { archInfo } from './arch';
@@ -123,6 +123,57 @@ export class Kbuild {
 				problemMatcher: ['$gcc'],
 			},
 		);
+	}
+
+	/** make clean on the configured build; nothing to do before Configure. */
+	async clean(): Promise<number> {
+		const state = this.settings.configured();
+		if (!state) {
+			return 0;
+		}
+		const script = this.make(this.settings.makeArgs(state), 'clean');
+		return runTask(this.folder, `Clean ${state.arch} ${state.variant}`, 'bash', ['-c', script]);
+	}
+
+	/** Full clean: make mrproper on the selected build (removes .config and all output). */
+	async mrproper(): Promise<number> {
+		const settings = this.settings;
+		const state = settings.configured();
+		const makeArgs = state ? settings.makeArgs(state) : settings.makeArgsForConfigure();
+		const name = `Full clean ${settings.arch} ${settings.variant}`;
+		const code = await runTask(this.folder, name, 'bash', [
+			'-c',
+			this.make(makeArgs, 'mrproper'),
+		]);
+		if (code === 0) {
+			settings.clearConfigured();
+		}
+		return code;
+	}
+
+	/**
+	 * menuconfig / nconfig on the configured build, in a terminal in the editor area: they
+	 * need at least 19 lines by 80 columns, more than the terminal panel often has.
+	 */
+	async interactiveConfig(tool: 'menuconfig' | 'nconfig'): Promise<void> {
+		const state = this.settings.configured();
+		if (!state) {
+			vscode.window.showWarningMessage('Kernel: run Configure first.');
+			return;
+		}
+		const make = this.make(this.settings.makeArgs(state), tool);
+		const terminal = vscode.window.createTerminal({
+			name: `${tool} ${state.arch} ${state.variant}`,
+			location: vscode.TerminalLocation.Editor,
+			cwd: this.root,
+			shellPath: 'bash',
+			// A clean exit closes the terminal; a failure stays to be read.
+			shellArgs: [
+				'-c',
+				`${make} || { echo; read -n1 -p "${tool} failed. Press a key to close."; exit 1; }`,
+			],
+		});
+		terminal.show();
 	}
 
 	/** The kernel image of a configured build. */

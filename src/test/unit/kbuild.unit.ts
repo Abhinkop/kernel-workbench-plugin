@@ -143,6 +143,36 @@ describe('kbuild', () => {
 		);
 	});
 
+	it('cleans, and full-cleans forgetting the configuration', async () => {
+		const { settings, kbuild, log } = fake();
+		assert.equal(await kbuild.clean(), 0, 'nothing to clean before Configure');
+		assert.doesNotMatch(log(), /clean/);
+		await kbuild.configure();
+		assert.equal(await kbuild.clean(), 0);
+		assert.match(log(), /^make .* clean$/m);
+		assert.equal(await kbuild.mrproper(), 0);
+		assert.match(log(), /^make .* mrproper$/m);
+		assert.equal(settings.configured(), undefined, 'Full clean forgets the configuration');
+	});
+
+	it('opens menuconfig in an editor tab, closing on a clean exit', async () => {
+		const { kbuild } = fake();
+		await kbuild.interactiveConfig('menuconfig');
+		assert.match(String(state.log.pop()?.message), /run Configure first/);
+		await kbuild.configure();
+		await kbuild.interactiveConfig('menuconfig');
+		const terminal = state.terminals.find(t => /^menuconfig /.test(t.name));
+		assert.ok(terminal, 'a menuconfig terminal');
+		assert.equal(terminal.options.location, vscode.TerminalLocation.Editor, 'room for 19x80');
+		assert.ok(terminal.shown);
+		const [, script] = terminal.options.shellArgs as string[];
+		assert.match(
+			script,
+			/make .* menuconfig \|\| \{ .*read -n1.*exit 1; \}$/,
+			'waits for a key only on failure',
+		);
+	});
+
 	it('knows the kernel image of a build', () => {
 		const { kbuild } = fake();
 		const recorded = { arch: 'arm64', buildDir: '/b' } as any;

@@ -71,6 +71,31 @@
 				"title": "Build",
 				"category": "Kernel",
 				"icon": "$(tools)"
+			},
+			{
+				"command": "kernelWorkbench.rebuild",
+				"title": "Rebuild (Clean + Build)",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.clean",
+				"title": "Clean",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.mrproper",
+				"title": "Full Clean (mrproper)",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.menuconfig",
+				"title": "Run menuconfig",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.nconfig",
+				"title": "Run nconfig",
+				"category": "Kernel"
 			}
 		],
 		"submenus": [
@@ -155,6 +180,26 @@
 				},
 				{
 					"command": "kernelWorkbench.build",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.rebuild",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.clean",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.mrproper",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.menuconfig",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.nconfig",
 					"when": "kernelWorkbench.active"
 				}
 			],

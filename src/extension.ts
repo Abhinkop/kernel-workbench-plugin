@@ -44,6 +44,14 @@ function registerCommands(
 		['kernelWorkbench.selectConfig', () => pickConfig(settings)],
 		['kernelWorkbench.configure', () => kbuild.configure()],
 		['kernelWorkbench.build', () => kbuild.build()],
+		[
+			'kernelWorkbench.rebuild',
+			async () => ((await kbuild.clean()) === 0 ? kbuild.build() : 1),
+		],
+		['kernelWorkbench.clean', () => kbuild.clean()],
+		['kernelWorkbench.mrproper', () => kbuild.mrproper()],
+		['kernelWorkbench.menuconfig', () => kbuild.interactiveConfig('menuconfig')],
+		['kernelWorkbench.nconfig', () => kbuild.interactiveConfig('nconfig')],
 	];
 	for (const [id, fn] of commands) {
 		context.subscriptions.push(vscode.commands.registerCommand(id, fn));

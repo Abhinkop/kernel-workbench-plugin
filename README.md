@@ -46,6 +46,10 @@ Configure, build, run and debug the Linux kernel from VS Code.
 - **Kernel: Build** (F7) builds the configured target with the toolchain arguments recorded
   at Configure plus `kernelWorkbench.make.args` as set now, configuring first if the target
   was never configured. The compiler's errors and warnings go to the Problems panel.
+- **Kernel: Clean**, **Rebuild (Clean + Build)** and **Full Clean (mrproper)**, which also
+  forgets the configuration; **Run menuconfig** and **Run nconfig**, which open on the
+  configured build in a terminal in the editor area (they need at least 19 lines by 80
+  columns) and close when they exit cleanly.
 
 ## Requirements
 
