@@ -9,7 +9,9 @@
 // constructed, extended and read from, and returns more of the same. The
 // parts the extension reads values from are real: the workspace folders,
 // settings (stub.settings, else the default), setting changes
-// (stub.changeSettings), EventEmitter and Uri.file.
+// (stub.changeSettings), registerCommand, which records the command ids,
+// the answers to quick picks and open dialogs (stub.quickPick,
+// stub.openDialog), EventEmitter and Uri.file.
 import Module = require('module');
 
 const handler: ProxyHandler<any> = {
@@ -61,6 +63,12 @@ const configurationChanged = new EventEmitter<{ affectsConfiguration: (s: string
 export const stub = {
 	/** Folders the extension sees as open. */
 	workspaceFolders: [] as { uri: { fsPath: string }; name: string; index: number }[],
+	/** Command ids passed to vscode.commands.registerCommand. */
+	registeredCommands: [] as string[],
+	/** Answers showQuickPick: gets the items, returns the one picked (undefined: Escape). */
+	quickPick: (items: any[]): any => undefined,
+	/** Answers showOpenDialog: the paths picked (undefined: cancelled). */
+	openDialog: (): string[] | undefined => undefined,
 	/** kernelWorkbench.* settings, without the prefix; anything else is the default. */
 	settings: {} as Record<string, unknown>,
 	/** Change kernelWorkbench.* settings and tell the listeners, as VS Code does. */
@@ -89,6 +97,16 @@ export const vscode = anything({
 				key in stub.settings ? stub.settings[key] : fallback,
 		}),
 		onDidChangeConfiguration: configurationChanged.event,
+	}),
+	commands: anything({
+		registerCommand: (id: string) => {
+			stub.registeredCommands.push(id);
+			return { dispose() {} };
+		},
+	}),
+	window: anything({
+		showQuickPick: async (items: any[]) => stub.quickPick(await items),
+		showOpenDialog: async () => stub.openDialog()?.map(uriFile),
 	}),
 	EventEmitter,
 	Uri: anything({ file: uriFile }),
