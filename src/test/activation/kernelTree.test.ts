@@ -3,8 +3,8 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
 
-suite('Opened on a kernel tree', () => {
-	test('the extension activates', async () => {
+describe('Opened on a kernel tree', () => {
+	it('the extension activates', async () => {
 		const ext = vscode.extensions.getExtension('ajose.kernel-workbench');
 		assert.ok(ext, 'extension ajose.kernel-workbench is not installed');
 		for (let i = 0; i < 100 && !ext.isActive; i++) {

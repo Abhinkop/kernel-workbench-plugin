@@ -36,6 +36,159 @@
 	"activationEvents": [
 		"workspaceContains:Kbuild"
 	],
+	"contributes": {
+		"commands": [
+			{
+				"command": "kernelWorkbench.selectArch",
+				"title": "Select Architecture…",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.selectVariant",
+				"title": "Select Debug or Release…",
+				"category": "Kernel"
+			},
+			{
+				"command": "kernelWorkbench.selectConfig",
+				"title": "Select Base Config…",
+				"category": "Kernel",
+				"icon": "$(file-code)"
+			},
+			{
+				"command": "kernelWorkbench.editItem",
+				"title": "Change…",
+				"category": "Kernel",
+				"icon": "$(edit)"
+			}
+		],
+		"submenus": [
+			{
+				"id": "kernelWorkbench.target",
+				"label": "Kernel Workbench",
+				"icon": "$(chip)"
+			}
+		],
+		"menus": {
+			"editor/title": [
+				{
+					"submenu": "kernelWorkbench.target",
+					"when": "kernelWorkbench.active",
+					"group": "navigation@-10"
+				}
+			],
+			"kernelWorkbench.target": [
+				{
+					"command": "kernelWorkbench.selectArch",
+					"group": "1_target@1"
+				},
+				{
+					"command": "kernelWorkbench.selectVariant",
+					"group": "1_target@2"
+				},
+				{
+					"command": "kernelWorkbench.selectConfig",
+					"group": "1_target@3"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "kernelWorkbench.selectArch",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.selectVariant",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.selectConfig",
+					"when": "kernelWorkbench.active"
+				},
+				{
+					"command": "kernelWorkbench.editItem",
+					"when": "false"
+				}
+			],
+			"view/item/context": [
+				{
+					"command": "kernelWorkbench.editItem",
+					"when": "view == kernelWorkbench.kernel && viewItem == edit",
+					"group": "inline"
+				},
+				{
+					"command": "kernelWorkbench.editItem",
+					"when": "view == kernelWorkbench.kernel && viewItem == edit",
+					"group": "1_edit@1"
+				}
+			]
+		},
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "kernelWorkbench",
+					"title": "Kernel",
+					"icon": "media/kernel.svg"
+				}
+			]
+		},
+		"views": {
+			"kernelWorkbench": [
+				{
+					"id": "kernelWorkbench.kernel",
+					"name": "Kernel",
+					"when": "kernelWorkbench.active",
+					"icon": "media/kernel.svg"
+				}
+			]
+		},
+		"configuration": [
+			{
+				"title": "Configure",
+				"order": 1,
+				"properties": {
+					"kernelWorkbench.arch": {
+						"type": "string",
+						"enum": [
+							"",
+							"x86_64",
+							"arm64",
+							"riscv64"
+						],
+						"default": "",
+						"description": "Default architecture for trees where none was picked. Empty: the host architecture.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.variant": {
+						"type": "string",
+						"enum": [
+							"debug",
+							"release"
+						],
+						"default": "debug",
+						"description": "Default build variant for trees where none was picked.",
+						"scope": "resource"
+					},
+					"kernelWorkbench.configure.defconfig": {
+						"type": "string",
+						"default": "defconfig",
+						"markdownDescription": "Default base config: one or more make targets (`defconfig`, `defconfig kvm_guest.config`, `tinyconfig`) or a path to a `.config` file. A base config picked for an architecture overrides it.",
+						"scope": "resource"
+					}
+				}
+			},
+			{
+				"title": "Build",
+				"order": 2,
+				"properties": {
+					"kernelWorkbench.buildDirectory": {
+						"type": "string",
+						"default": "build/${arch}/${variant}",
+						"markdownDescription": "Build output (`O=`), relative to the kernel tree or absolute. `${arch}` and `${variant}` are substituted.",
+						"scope": "resource"
+					}
+				}
+			}
+		]
+	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
@@ -46,8 +199,9 @@
 		"format:check": "prettier --check .",
 		"test": "vscode-test",
 		"package": "vsce package",
-		"test:unit": "npm run compile && node --test out/test/unit/kernelTree.unit.js",
-		"test:integration": "npm run compile && node --test out/test/integration/kernelTree.integration.js && vscode-test --label mainline-kernel"
+		"test:unit": "npm run compile && mocha",
+		"test:integration": "npm run compile && mocha --no-config out/test/integration/*.integration.js && vscode-test --label integration",
+		"test:ui": "npm run compile && node out/test/ui/run.js"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
@@ -58,9 +212,11 @@
 		"@vscode/vsce": "^4.0.0",
 		"eslint": "^10.5.0",
 		"jsonc-parser": "^3.3.1",
+		"mocha": "^11.8.0",
 		"prettier": "3.9.9",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.61.1"
+		"typescript-eslint": "^8.61.1",
+		"vscode-extension-tester": "^8.28.1"
 	},
 	"overrides": {
 		"diff": "^8.0.4",

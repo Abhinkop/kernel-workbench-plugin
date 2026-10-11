@@ -42,6 +42,19 @@
 			"command": "node",
 			"args": ["${workspaceFolder}/scripts/configure-kernel-tree.mjs", "${input:kernelTree}"],
 			"problemMatcher": []
+		},
+		{
+			// Clicks through a real VS Code window on the kernel tree in
+			// kernelWorkbench.dev.kernelTree
+			"type": "npm",
+			"script": "test:ui",
+			"label": "npm: test:ui",
+			"group": "test",
+			"options": {
+				"env": {
+					"KERNEL_TREE": "${config:kernelWorkbench.dev.kernelTree}"
+				}
+			}
 		}
 	],
 	"inputs": [
